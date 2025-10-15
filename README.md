@@ -60,7 +60,7 @@ Such information is used when manipulating data using the core modules like get,
 
 ### Schema
 
-[Module](schema) for defining the schema of an object. This includes the data type as well as the tree structure of
+[Module](schema) for defining and working with the schema of an object. This includes the data type as well as the tree structure of
 every simple primitive, linear collection element, or associative collection entry in an object.
 
 Useful for the following purposes:
@@ -70,10 +70,7 @@ Useful for the following purposes:
 - Deserializing data from json or yaml to a schema defined type. Allows extension with custom deserializers.
 - Recursively creating new nested objects with the [Set](object/set.go) module. For example, a source empty nil value of
   type any can end up being an array of pointers to structs if that is the schema definition.
-
-### Schema Path
-
-[Module](schemapath) for fetching the schema of data at a `JSONPath`.
+- Fetch the schema of data at a `JSONPath`.
 
 ## Supported data types
 

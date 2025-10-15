@@ -9,7 +9,7 @@ import (
 
 func TestObject_AreEqual(t *testing.T) {
 	for testData := range AreEqualTestData {
-		if AreEqual(reflect.ValueOf(testData.Left), reflect.ValueOf(testData.Right)) != testData.Expected {
+		if NewAreEqual().WithCustomEquals(testData.CustomAreEquals).AreEqual(reflect.ValueOf(testData.Left), reflect.ValueOf(testData.Right)) != testData.Expected {
 			t.Error(
 				"AreEqual(testData.Left, testData.Right) not equal to testData.Expected\n",
 				"testData.Expected", testData.Expected, "\n",
@@ -21,8 +21,9 @@ func TestObject_AreEqual(t *testing.T) {
 }
 
 type AreEqualData struct {
-	Left, Right any
-	Expected    bool
+	Left, Right     any
+	Expected        bool
+	CustomAreEquals AreEquals
 }
 
 func AreEqualTestData(yield func(data *AreEqualData) bool) {

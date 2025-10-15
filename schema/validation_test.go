@@ -10,12 +10,8 @@ import (
 )
 
 func TestSchema_ValidateData(t *testing.T) {
-	for testData := range validateDataTestData {
-		schema := new(Processor)
-		schema.SetValidateOnFirstMatch(testData.ValidateOnFirstMatch)
-		schema.SetValidators(testData.Validators)
-
-		ok, err := schema.ValidateData(testData.Data, testData.Schema)
+	for testData := range validationDataTestData {
+		ok, err := NewValidation().WithValidateOnFirstMatch(testData.ValidateOnFirstMatch).WithCustomValidators(testData.Validators).ValidateData(testData.Data, testData.Schema)
 		if ok != testData.ExpectedOk {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
@@ -32,12 +28,12 @@ func TestSchema_ValidateData(t *testing.T) {
 			}
 		}
 
-		if !ok && err != nil && testData.LogErrorsIfExpectedNotOk {
+		if err != nil && testData.LogErrorsIfExpectedNotOk {
 			var schemaError *Error
 			if errors.As(err, &schemaError) {
 				t.Log(
 					"-----Error Details-----", "\n",
-					"Test Tile:", testData.TestTitle, "\n",
+					"Test Title:", testData.TestTitle, "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
 				)
@@ -46,18 +42,18 @@ func TestSchema_ValidateData(t *testing.T) {
 	}
 }
 
-type validateData struct {
+type validationData struct {
 	internal.TestData
 	Schema               Schema
 	Data                 any
 	ValidateOnFirstMatch bool
-	Validators           map[reflect.Type]Validator
+	Validators           Validators
 	ExpectedOk           bool
 }
 
-func validateDataTestData(yield func(data *validateData) bool) {
+func validationDataTestData(yield func(data *validationData) bool) {
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "Validate simple primitive",
 			},
@@ -73,7 +69,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "Validate invalid simple primitive",
 			},
@@ -89,7 +85,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test valid data",
 			},
@@ -107,7 +103,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test invalid data",
 			},
@@ -121,7 +117,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test valid list of products",
 			},
@@ -145,7 +141,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test invalid value in list of products",
 			},
@@ -170,7 +166,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test valid map of pointer to users",
 			},
@@ -194,7 +190,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test invalid value in map",
 			},
@@ -219,7 +215,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test map of any value type",
 			},
@@ -246,7 +242,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "test deeply nested data",
 			},
@@ -289,7 +285,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "testing with global uuid custom validator for valid value",
 			},
@@ -306,7 +302,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 					Occupation: "busy",
 				},
 			},
-			Validators: map[reflect.Type]Validator{
+			Validators: Validators{
 				reflect.TypeOf(uuid.UUID{}): internal.Ptr(Pgxuuid{}),
 			},
 			ExpectedOk: true,
@@ -316,7 +312,7 @@ func validateDataTestData(yield func(data *validateData) bool) {
 	}
 
 	if !yield(
-		&validateData{
+		&validationData{
 			TestData: internal.TestData{
 				TestTitle: "testing with node specific uuid custom validator for invalid nil value",
 			},

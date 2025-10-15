@@ -30,10 +30,9 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 	}
 
 	if recursiveSegment.IsKeyRoot {
-		newCurrentPath := append(currentPath, recursiveSegment)
 		if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 			if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-				return n.ifValueFoundInObject(newCurrentPath, currentValue.Interface())
+				return n.ifValueFoundInObject(currentPath, currentValue.Interface())
 			}
 
 			recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -43,7 +42,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 				LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 			}
 
-			return n.recursiveDescentForEachValue(currentValue, recursiveDescentIndexes, newCurrentPath)
+			return n.recursiveDescentForEachValue(currentValue, recursiveDescentIndexes, currentPath)
 		}
 
 		recursiveIndexes := internal.PathSegmentsIndexes{
@@ -52,24 +51,21 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 			CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
 			LastCollection:    currentPathSegmentIndexes.LastCollection,
 		}
-		return n.recursiveForEachValue(currentValue, recursiveIndexes, newCurrentPath)
+		return n.recursiveForEachValue(currentValue, recursiveIndexes, currentPath)
 	}
 
 	if mapKeyType, _, ok := core.GetMapKeyValueType(currentValue); ok {
 		if recursiveSegment.IsKey {
 			var mapKey any
-			if err := n.schemaProcessor.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
+			if err := n.defaultConverter.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
 				return false
 			}
 
 			mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
-			newCurrentPath := append(currentPath, recursiveSegment)
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 					if mapValue.IsValid() {
-						if n.ifValueFoundInObject(newCurrentPath, mapValue.Interface()) {
-							return true
-						}
+						return n.ifValueFoundInObject(append(currentPath, recursiveSegment), mapValue.Interface())
 					}
 					return false
 				}
@@ -81,7 +77,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 					LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 				}
 
-				return n.recursiveDescentForEachValue(mapValue, recursiveDescentIndexes, newCurrentPath)
+				return n.recursiveDescentForEachValue(mapValue, recursiveDescentIndexes, append(currentPath, recursiveSegment))
 			}
 
 			recursiveIndexes := internal.PathSegmentsIndexes{
@@ -90,20 +86,20 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 				CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
 				LastCollection:    currentPathSegmentIndexes.LastCollection,
 			}
-			return n.recursiveForEachValue(mapValue, recursiveIndexes, newCurrentPath)
+			return n.recursiveForEachValue(mapValue, recursiveIndexes, append(currentPath, recursiveSegment))
 		}
 
 		if recursiveSegment.IsKeyIndexAll || len(recursiveSegment.UnionSelector) > 0 {
 			_sliceAny := make([]any, 0)
-			allSlice := reflect.MakeSlice(reflect.TypeOf(_sliceAny), 0, 0)
-			allSliceCollectionSegments := make([]*path.CollectionMemberSegment, 0)
+			selectorSlice := reflect.MakeSlice(reflect.TypeOf(_sliceAny), 0, 0)
+			selectorSliceElementPaths := make(path.RecursiveDescentSegment, 0)
 
 			if recursiveSegment.IsKeyIndexAll {
 				for _, valueKey := range currentValue.MapKeys() {
 					mapValue := currentValue.MapIndex(valueKey)
 					if mapValue.IsValid() {
-						allSlice = reflect.Append(allSlice, mapValue)
-						allSliceCollectionSegments = append(allSliceCollectionSegments, &path.CollectionMemberSegment{IsKey: true, Key: valueKey.String()})
+						selectorSlice = reflect.Append(selectorSlice, mapValue)
+						selectorSliceElementPaths = append(selectorSliceElementPaths, &path.CollectionMemberSegment{IsKey: true, Key: valueKey.String()})
 					}
 				}
 			} else {
@@ -113,56 +109,19 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 					}
 
 					var mapKey any
-					if err := n.schemaProcessor.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: reflect.ValueOf(unionKey.Key).Kind(), Type: reflect.ValueOf(unionKey.Key).Type()}, &mapKey); err != nil {
+					if err := n.defaultConverter.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: reflect.ValueOf(unionKey.Key).Kind(), Type: reflect.ValueOf(unionKey.Key).Type()}, &mapKey); err != nil {
 						return false
 					}
 
 					mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
 					if mapValue.IsValid() {
-						allSlice = reflect.Append(allSlice, mapValue)
-						allSliceCollectionSegments = append(allSliceCollectionSegments, unionKey)
+						selectorSlice = reflect.Append(selectorSlice, mapValue)
+						selectorSliceElementPaths = append(selectorSliceElementPaths, unionKey)
 					}
 				}
 			}
 
-			if allSlice.Len() == 0 {
-				return false
-			}
-
-			for i := 0; i < len(allSliceCollectionSegments); i++ {
-				newCurrentPath := append(currentPath, allSliceCollectionSegments[i])
-				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
-					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						if n.ifValueFoundInObject(newCurrentPath, allSlice.Index(i).Interface()) {
-							return true
-						}
-						continue
-					}
-
-					recursiveDescentIndexes := internal.PathSegmentsIndexes{
-						CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
-						LastRecursive:     currentPathSegmentIndexes.LastRecursive,
-						CurrentCollection: 0,
-						LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
-					}
-
-					if n.recursiveDescentForEachValue(allSlice.Index(i), recursiveDescentIndexes, newCurrentPath) {
-						return true
-					}
-					continue
-				}
-
-				recursiveIndexes := internal.PathSegmentsIndexes{
-					CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive,
-					LastRecursive:     currentPathSegmentIndexes.LastRecursive,
-					CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
-					LastCollection:    currentPathSegmentIndexes.LastCollection,
-				}
-
-				if n.recursiveForEachValue(allSlice.Index(i), recursiveIndexes, newCurrentPath) {
-					return true
-				}
-			}
+			return n.selectorLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
 		}
 
 		return false
@@ -175,11 +134,11 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 			}
 
 			sliceArrayElementValue := currentValue.Index(recursiveSegment.Index)
-			newCurrentPath := append(currentPath, recursiveSegment)
+			nextPathSegments := append(currentPath, recursiveSegment)
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 					if sliceArrayElementValue.IsValid() {
-						if n.ifValueFoundInObject(newCurrentPath, sliceArrayElementValue.Interface()) {
+						if n.ifValueFoundInObject(nextPathSegments, sliceArrayElementValue.Interface()) {
 							return true
 						}
 					}
@@ -193,7 +152,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 					LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 				}
 
-				return n.recursiveDescentForEachValue(sliceArrayElementValue, recursiveDescentIndexes, newCurrentPath)
+				return n.recursiveDescentForEachValue(sliceArrayElementValue, recursiveDescentIndexes, nextPathSegments)
 			}
 
 			recursiveIndexes := internal.PathSegmentsIndexes{
@@ -202,20 +161,20 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 				CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
 				LastCollection:    currentPathSegmentIndexes.LastCollection,
 			}
-			return n.recursiveForEachValue(sliceArrayElementValue, recursiveIndexes, newCurrentPath)
+			return n.recursiveForEachValue(sliceArrayElementValue, recursiveIndexes, nextPathSegments)
 		}
 
 		if recursiveSegment.IsKeyIndexAll || len(recursiveSegment.UnionSelector) > 0 || recursiveSegment.LinearCollectionSelector != nil {
 			_sliceAny := make([]any, 0)
-			allSlice := reflect.MakeSlice(reflect.TypeOf(_sliceAny), 0, 0)
-			allSliceCollectionSegments := make([]*path.CollectionMemberSegment, 0)
+			selectorSlice := reflect.MakeSlice(reflect.TypeOf(_sliceAny), 0, 0)
+			selectorSliceElementPaths := make(path.RecursiveDescentSegment, 0)
 
 			if recursiveSegment.IsKeyIndexAll {
 				for i := 0; i < currentValue.Len(); i++ {
 					arraySliceValue := currentValue.Index(i)
 					if arraySliceValue.IsValid() {
-						allSlice = reflect.Append(allSlice, arraySliceValue)
-						allSliceCollectionSegments = append(allSliceCollectionSegments, &path.CollectionMemberSegment{IsIndex: true, Index: i})
+						selectorSlice = reflect.Append(selectorSlice, arraySliceValue)
+						selectorSliceElementPaths = append(selectorSliceElementPaths, &path.CollectionMemberSegment{IsIndex: true, Index: i})
 					}
 				}
 			} else if len(recursiveSegment.UnionSelector) > 0 {
@@ -226,8 +185,8 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 
 					sliceArrayValue := currentValue.Index(unionKey.Index)
 					if sliceArrayValue.IsValid() {
-						allSlice = reflect.Append(allSlice, sliceArrayValue)
-						allSliceCollectionSegments = append(allSliceCollectionSegments, unionKey)
+						selectorSlice = reflect.Append(selectorSlice, sliceArrayValue)
+						selectorSliceElementPaths = append(selectorSliceElementPaths, unionKey)
 					}
 				}
 			} else {
@@ -261,50 +220,13 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 					}
 					sliceArrayValue := currentValue.Index(i)
 					if sliceArrayValue.IsValid() {
-						allSlice = reflect.Append(allSlice, sliceArrayValue)
-						allSliceCollectionSegments = append(allSliceCollectionSegments, &path.CollectionMemberSegment{IsIndex: true, Index: i})
+						selectorSlice = reflect.Append(selectorSlice, sliceArrayValue)
+						selectorSliceElementPaths = append(selectorSliceElementPaths, &path.CollectionMemberSegment{IsIndex: true, Index: i})
 					}
 				}
 			}
 
-			if allSlice.Len() == 0 {
-				return false
-			}
-
-			for i := 0; i < len(allSliceCollectionSegments); i++ {
-				newCurrentPath := append(currentPath, allSliceCollectionSegments[i])
-				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
-					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						if n.ifValueFoundInObject(newCurrentPath, allSlice.Index(i).Interface()) {
-							return true
-						}
-						continue
-					}
-
-					recursiveDescentIndexes := internal.PathSegmentsIndexes{
-						CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
-						LastRecursive:     currentPathSegmentIndexes.LastRecursive,
-						CurrentCollection: 0,
-						LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
-					}
-
-					if n.recursiveDescentForEachValue(allSlice.Index(i), recursiveDescentIndexes, newCurrentPath) {
-						return true
-					}
-					continue
-				}
-
-				recursiveIndexes := internal.PathSegmentsIndexes{
-					CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive,
-					LastRecursive:     currentPathSegmentIndexes.LastRecursive,
-					CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
-					LastCollection:    currentPathSegmentIndexes.LastCollection,
-				}
-
-				if n.recursiveForEachValue(allSlice.Index(i), recursiveIndexes, newCurrentPath) {
-					return true
-				}
-			}
+			return n.selectorLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
 		}
 
 		return false
@@ -317,11 +239,11 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 			}
 
 			structFieldValue := currentValue.FieldByName(recursiveSegment.Key)
-			newCurrentPath := append(currentPath, recursiveSegment)
+			nextPathSegments := append(currentPath, recursiveSegment)
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 					if structFieldValue.IsValid() {
-						if n.ifValueFoundInObject(newCurrentPath, structFieldValue.Interface()) {
+						if n.ifValueFoundInObject(nextPathSegments, structFieldValue.Interface()) {
 							return true
 						}
 					}
@@ -335,7 +257,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 					LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 				}
 
-				return n.recursiveDescentForEachValue(structFieldValue, recursiveDescentIndexes, newCurrentPath)
+				return n.recursiveDescentForEachValue(structFieldValue, recursiveDescentIndexes, nextPathSegments)
 			}
 
 			recursiveIndexes := internal.PathSegmentsIndexes{
@@ -344,13 +266,13 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 				CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
 				LastCollection:    currentPathSegmentIndexes.LastCollection,
 			}
-			return n.recursiveForEachValue(structFieldValue, recursiveIndexes, newCurrentPath)
+			return n.recursiveForEachValue(structFieldValue, recursiveIndexes, nextPathSegments)
 		}
 
 		if recursiveSegment.IsKeyIndexAll || len(recursiveSegment.UnionSelector) > 0 {
 			_sliceAny := make([]any, 0)
-			allSlice := reflect.MakeSlice(reflect.TypeOf(_sliceAny), 0, 0)
-			allSliceCollectionSegments := make([]*path.CollectionMemberSegment, 0)
+			selectorSlice := reflect.MakeSlice(reflect.TypeOf(_sliceAny), 0, 0)
+			selectorSliceElementPaths := make(path.RecursiveDescentSegment, 0)
 
 			if recursiveSegment.IsKeyIndexAll {
 				for i := 0; i < currentValue.NumField(); i++ {
@@ -360,8 +282,8 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 
 					structField := currentValue.Field(i)
 					if structField.IsValid() {
-						allSlice = reflect.Append(allSlice, structField)
-						allSliceCollectionSegments = append(allSliceCollectionSegments, &path.CollectionMemberSegment{IsKey: true, Key: currentValue.Type().Field(i).Name})
+						selectorSlice = reflect.Append(selectorSlice, structField)
+						selectorSliceElementPaths = append(selectorSliceElementPaths, &path.CollectionMemberSegment{IsKey: true, Key: currentValue.Type().Field(i).Name})
 					}
 				}
 			} else {
@@ -372,52 +294,59 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 
 					valueFromStruct := currentValue.FieldByName(unionKey.Key)
 					if valueFromStruct.IsValid() {
-						allSlice = reflect.Append(allSlice, valueFromStruct)
-						allSliceCollectionSegments = append(allSliceCollectionSegments, unionKey)
+						selectorSlice = reflect.Append(selectorSlice, valueFromStruct)
+						selectorSliceElementPaths = append(selectorSliceElementPaths, unionKey)
 					}
 				}
 			}
-			if allSlice.Len() == 0 {
-				return false
-			}
 
-			for i := 0; i < len(allSliceCollectionSegments); i++ {
-				newCurrentPath := append(currentPath, allSliceCollectionSegments[i])
-				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
-					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						if n.ifValueFoundInObject(newCurrentPath, allSlice.Index(i).Interface()) {
-							return true
-						}
-						continue
-					}
-
-					recursiveDescentIndexes := internal.PathSegmentsIndexes{
-						CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
-						LastRecursive:     currentPathSegmentIndexes.LastRecursive,
-						CurrentCollection: 0,
-						LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
-					}
-
-					if n.recursiveDescentForEachValue(allSlice.Index(i), recursiveDescentIndexes, newCurrentPath) {
-						return true
-					}
-					continue
-				}
-
-				recursiveIndexes := internal.PathSegmentsIndexes{
-					CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive,
-					LastRecursive:     currentPathSegmentIndexes.LastRecursive,
-					CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
-					LastCollection:    currentPathSegmentIndexes.LastCollection,
-				}
-
-				if n.recursiveForEachValue(allSlice.Index(i), recursiveIndexes, newCurrentPath) {
-					return true
-				}
-			}
+			return n.selectorLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
 		}
 
 		return false
+	}
+
+	return false
+}
+
+func (n *ForEachValue) selectorLoop(selectorSlice reflect.Value, selectorSliceElementPaths path.RecursiveDescentSegment, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
+	if selectorSlice.Len() == 0 {
+		return false
+	}
+
+	for i := 0; i < len(selectorSliceElementPaths); i++ {
+		nextPathSegments := append(currentPath, selectorSliceElementPaths[i])
+		if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
+			if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
+				if n.ifValueFoundInObject(nextPathSegments, selectorSlice.Index(i).Interface()) {
+					return true
+				}
+				continue
+			}
+
+			recursiveDescentIndexes := internal.PathSegmentsIndexes{
+				CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
+				LastRecursive:     currentPathSegmentIndexes.LastRecursive,
+				CurrentCollection: 0,
+				LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
+			}
+
+			if n.recursiveDescentForEachValue(selectorSlice.Index(i), recursiveDescentIndexes, nextPathSegments) {
+				return true
+			}
+			continue
+		}
+
+		recursiveIndexes := internal.PathSegmentsIndexes{
+			CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive,
+			LastRecursive:     currentPathSegmentIndexes.LastRecursive,
+			CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
+			LastCollection:    currentPathSegmentIndexes.LastCollection,
+		}
+
+		if n.recursiveForEachValue(selectorSlice.Index(i), recursiveIndexes, nextPathSegments) {
+			return true
+		}
 	}
 
 	return false
@@ -439,7 +368,7 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 	}
 
 	if recursiveDescentSearchSegment.IsKeyRoot {
-		return n.recursiveForEachValue(currentValue, currentPathSegmentIndexes, currentPath)
+		return n.recursiveForEachValue(currentValue, currentPathSegmentIndexes, append(currentPath, recursiveDescentSearchSegment))
 	}
 
 	if !recursiveDescentSearchSegment.IsKey {
@@ -457,11 +386,11 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 				continue
 			}
 
-			newCurrentPath := append(currentPath, recursiveDescentSearchSegment)
+			nextPathSegments := append(currentPath, recursiveDescentSearchSegment)
 			if valueKey.Interface() == recursiveDescentSearchSegment.Key {
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						if n.ifValueFoundInObject(newCurrentPath, mapEntryValue.Interface()) {
+						if n.ifValueFoundInObject(nextPathSegments, mapEntryValue.Interface()) {
 							return true
 						}
 					} else {
@@ -472,7 +401,7 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 							LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 						}
 
-						if n.recursiveDescentForEachValue(mapEntryValue, recursiveDescentIndexes, newCurrentPath) {
+						if n.recursiveDescentForEachValue(mapEntryValue, recursiveDescentIndexes, nextPathSegments) {
 							return true
 						}
 					}
@@ -484,13 +413,13 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 						LastCollection:    currentPathSegmentIndexes.LastCollection,
 					}
 
-					if n.recursiveForEachValue(mapEntryValue, recursiveIndexes, newCurrentPath) {
+					if n.recursiveForEachValue(mapEntryValue, recursiveIndexes, nextPathSegments) {
 						return true
 					}
 				}
 			}
 
-			if n.recursiveDescentForEachValue(mapEntryValue, currentPathSegmentIndexes, newCurrentPath) {
+			if n.recursiveDescentForEachValue(mapEntryValue, currentPathSegmentIndexes, nextPathSegments) {
 				return true
 			}
 		}
@@ -501,20 +430,20 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 				continue
 			}
 
-			newCurrentPath := append(currentPath, &path.CollectionMemberSegment{IsIndex: true, Index: i})
+			nextPathSegments := append(currentPath, &path.CollectionMemberSegment{IsIndex: true, Index: i})
 
-			if n.recursiveDescentForEachValue(sliceArrayElementValue, currentPathSegmentIndexes, newCurrentPath) {
+			if n.recursiveDescentForEachValue(sliceArrayElementValue, currentPathSegmentIndexes, nextPathSegments) {
 				return true
 			}
 		}
 	} else if currentValue.Kind() == reflect.Struct {
 		if internal.StartsWithCapital(recursiveDescentSearchSegment.Key) {
 			if structFieldValue := currentValue.FieldByName(recursiveDescentSearchSegment.Key); structFieldValue.IsValid() {
-				newCurrentPath := append(currentPath, recursiveDescentSearchSegment)
+				nextPathSegments := append(currentPath, recursiveDescentSearchSegment)
 
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						if n.ifValueFoundInObject(newCurrentPath, structFieldValue.Interface()) {
+						if n.ifValueFoundInObject(nextPathSegments, structFieldValue.Interface()) {
 							return true
 						}
 					} else {
@@ -525,7 +454,7 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 							LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 						}
 
-						if n.recursiveDescentForEachValue(structFieldValue, recursiveDescentIndexes, newCurrentPath) {
+						if n.recursiveDescentForEachValue(structFieldValue, recursiveDescentIndexes, nextPathSegments) {
 							return true
 						}
 					}
@@ -537,7 +466,7 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 						LastCollection:    currentPathSegmentIndexes.LastCollection,
 					}
 
-					if n.recursiveForEachValue(structFieldValue, recursiveIndexes, newCurrentPath) {
+					if n.recursiveForEachValue(structFieldValue, recursiveIndexes, nextPathSegments) {
 						return true
 					}
 				}
@@ -587,17 +516,18 @@ func (n *ForEachValue) ForEach(root any, jsonPath path.JSONPath, ifValueFoundInO
 	}
 }
 
-func (n *ForEachValue) SetIfValueFoundInObject(object IfValueFoundInObject) {
-	n.ifValueFoundInObject = object
+func (n *ForEachValue) WithDefaultConverter(value schema.DefaultConverter) *ForEachValue {
+	n.defaultConverter = value
+	return n
 }
 
-func (n *ForEachValue) SetSchemaProcessor(processor schema.DataProcessor) {
-	n.schemaProcessor = processor
+func (n *ForEachValue) SetDefaultConverter(value schema.DefaultConverter) {
+	n.defaultConverter = value
 }
 
-func NewForEachValue(schemaProcessor schema.DataProcessor) *ForEachValue {
+func NewForEachValue() *ForEachValue {
 	n := new(ForEachValue)
-	n.schemaProcessor = schemaProcessor
+	n.defaultConverter = schema.NewConversion()
 	return n
 }
 

@@ -23,6 +23,7 @@ func TestPath_ExtractCollectionMembersSegments(t *testing.T) {
 }
 
 type ExtractCollectionMemberSegmentsData struct {
+	internal.TestData
 	Segment          JSONPath
 	ExpectedSegments RecursiveDescentSegment
 }

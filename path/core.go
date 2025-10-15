@@ -27,10 +27,10 @@ type LinearCollectionSelector struct {
 // CollectionMemberSegment For final individual path segment in JSONPath.
 type CollectionMemberSegment struct {
 	Key                      string
-	Index                    int
 	IsKey                    bool
 	IsKeyIndexAll            bool
 	IsKeyRoot                bool
+	Index                    int
 	IsIndex                  bool
 	ExpectLinear             bool
 	ExpectAssociative        bool
@@ -39,11 +39,12 @@ type CollectionMemberSegment struct {
 }
 
 const (
-	JsonpathKeyIndexAll  string = "*"
-	JsonpathKeyRoot      string = "$"
-	JsonpathDotNotation  string = "."
-	JsonpathLeftBracket  string = "["
-	JsonpathRightBracket string = "]"
+	JsonpathKeyIndexAll              string = "*"
+	JsonpathKeyRoot                  string = "$"
+	JsonpathDotNotation              string = "."
+	JsonpathRecursiveDescentNotation string = ".."
+	JsonpathLeftBracket              string = "["
+	JsonpathRightBracket             string = "]"
 )
 
 func getJsonKey(value string) string {

@@ -12,13 +12,8 @@ import (
 
 func TestSchema_DeserializeFromJson(t *testing.T) {
 	for testData := range deserializeJsonDataTestData {
-		schema := new(Processor)
-		schema.SetValidateOnFirstMatch(testData.ValidateOnFirstMatch)
-		schema.SetValidators(testData.Validators)
-		schema.SetConverters(testData.Converters)
-
 		var res any
-		err := schema.DeserializeFromJson([]byte(testData.Source), testData.Schema, &res)
+		err := NewDeserialization().WithCustomConverters(testData.Converters).FromJSON([]byte(testData.Source), testData.Schema, &res)
 		if testData.ExpectedOk && err != nil {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",
@@ -60,13 +55,11 @@ func TestSchema_DeserializeFromJson(t *testing.T) {
 
 type deserializeData struct {
 	internal.TestData
-	Schema               Schema
-	Source               string
-	ValidateOnFirstMatch bool
-	Validators           map[reflect.Type]Validator
-	Converters           map[reflect.Type]Converter
-	ExpectedOk           bool
-	ExpectedData         any
+	Schema       Schema
+	Source       string
+	Converters   Converters
+	ExpectedOk   bool
+	ExpectedData any
 }
 
 func deserializeJsonDataTestData(yield func(data *deserializeData) bool) {

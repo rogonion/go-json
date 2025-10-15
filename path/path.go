@@ -47,7 +47,7 @@ func (n RecursiveDescentSegments) String() string {
 		}
 	}
 	if len(segmentsStr) > 0 {
-		return strings.Join(segmentsStr, "..")
+		return strings.Join(segmentsStr, JsonpathRecursiveDescentNotation)
 	}
 	return ""
 }
@@ -91,7 +91,7 @@ func (n *LinearCollectionSelector) String() string {
 		return ""
 	}
 
-	str := "["
+	str := JsonpathLeftBracket
 	if n.IsStart {
 		str += fmt.Sprintf("%d", n.Start)
 	}
@@ -103,7 +103,7 @@ func (n *LinearCollectionSelector) String() string {
 	if n.IsStep {
 		str += fmt.Sprintf("%d", n.Step)
 	}
-	str += "]"
+	str += JsonpathRightBracket
 	return str
 }
 
@@ -120,15 +120,15 @@ func (n *CollectionMemberSegment) String() string {
 		if n.ExpectAssociative {
 			return JsonpathKeyIndexAll
 		}
-		return fmt.Sprintf("[%s]", JsonpathKeyIndexAll)
+		return fmt.Sprintf("%s%s%s", JsonpathLeftBracket, JsonpathKeyIndexAll, JsonpathRightBracket)
 	}
 
 	if n.IsKeyRoot {
-		return fmt.Sprintf("%s", JsonpathKeyRoot)
+		return JsonpathKeyRoot
 	}
 
 	if n.IsIndex {
-		return fmt.Sprintf("[%d]", n.Index)
+		return fmt.Sprintf("%s%d%s", JsonpathLeftBracket, n.Index, JsonpathRightBracket)
 	}
 
 	if n.LinearCollectionSelector != nil {
@@ -150,7 +150,7 @@ func (n *CollectionMemberSegment) String() string {
 			}
 		}
 		if len(segmentsStr) > 0 {
-			return fmt.Sprintf("[%s]", strings.Join(segmentsStr, ","))
+			return fmt.Sprintf("%s%s%s", JsonpathLeftBracket, strings.Join(segmentsStr, ","), JsonpathRightBracket)
 		}
 	}
 

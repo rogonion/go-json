@@ -10,6 +10,34 @@ import (
 	"github.com/rogonion/go-json/path"
 )
 
+// SchemaPath represents a JSONPath both in its parsed and unparsed form.
+//
+// Ideally functions are expected to only work with a JSONPath with no recursive descent searches.
+type SchemaPath interface {
+	path.JSONPath | path.RecursiveDescentSegment | path.RecursiveDescentSegments
+}
+
+// Deserializer For performing deserialization of data from various source formats to a destination that adheres to the Schema.
+type Deserializer interface {
+	// FromJSON Deserializes JSON string into destination using Schema.
+	//
+	// Expects destination to be a pointer to where deserialized data should be stored.
+	FromJSON(data []byte, schema Schema, destination any) error
+
+	// FromYAML deserializes YAML string into destination using Schema.
+	//
+	// Expects destination to be a pointer to where deserialized data should be stored.
+	FromYAML(data []byte, schema Schema, destination any) error
+}
+
+type DefaultConverter interface {
+	// RecursiveConvert is method called when schema of type Schema is encountered in the recursive conversion process.
+	RecursiveConvert(source reflect.Value, schema Schema, pathSegments path.RecursiveDescentSegment) (reflect.Value, error)
+
+	// Convert is entrypoint for conversion.
+	Convert(data any, schema Schema, destination any) error
+}
+
 // Converter for defining custom conversion logic.
 //
 // Meant to be implemented by custom data types that need to perform specific value-based conversion beyond defaults.
@@ -18,12 +46,22 @@ type Converter interface {
 	//
 	// Parameters:
 	//	- data - The data to be converted.
-	//	- schema - The SchemaManip encountered to convert against.
+	//	- schema - The schema encountered to RecursiveConvert against.
 	//	- pathSegments - Current Path segments where data was encountered. Useful if error is returned as Error.
 	// Returns:
 	//	- deserialized data.
-	//	- Error of ErrDataConversionFailed if schema validation was not successful.
+	//	- Error of ErrDataConversionFailed if conversion was not successful
 	Convert(data reflect.Value, schema Schema, pathSegments path.RecursiveDescentSegment) (reflect.Value, error)
+}
+
+// Converters Map of custom converters.
+//
+// Intended to be used for custom conversion logic of user-defined types like structs.
+type Converters map[reflect.Type]Converter
+
+type DefaultValidator interface {
+	// ValidateData is entrypoint for validation.
+	ValidateData(data any, schema Schema) (bool, error)
 }
 
 // Validator for defining custom data validation logic.
@@ -34,7 +72,7 @@ type Validator interface {
 	//
 	// Parameters:
 	//	- data - The data to be validated.
-	//	- schema - The SchemaManip encountered to be validated against with custom rules.
+	//	- schema - The schema encountered to be validated against with custom rules.
 	//	- pathSegments - Current Path segments where data was encountered. Useful if error is returned as Error.
 	// Returns:
 	//	- bool to indicate if schema validation was successful.
@@ -42,38 +80,10 @@ type Validator interface {
 	ValidateData(data any, schema Schema, pathSegments path.RecursiveDescentSegment) (bool, error)
 }
 
-// DataProcessor for performing specific tasks against data using a Schema.
-type DataProcessor interface {
-	// ValidateData recursively validates data against Schema.
-	//
-	// Will loop through struct properties, array/slice elements, and entries in a map before defaulting to checking reflect.Type.
-	//
-	// Assumes implementor will allow a User to load their own Validator.
-	//
-	// Parameters:
-	//	- data - data to be validated.
-	//	- schema - Schema to validate data against.
-	//
-	// Returns:
-	//	- bool to indicate if schema validation was successful.
-	//	- Error of ErrDataValidationAgainstSchemaFailed if schema validation was not successful.
-	ValidateData(data any, schema Schema) (bool, error)
-
-	// DeserializeFromJson Deserializes JSON string into destination using Schema.
-	//
-	// Expects destination to be a pointer to where deserialized data should be stored.
-	DeserializeFromJson(data []byte, schema Schema, destination any) error
-
-	// DeserializeFromYaml deserializes YAML string into destination using Schema.
-	//
-	// Expects destination to be a pointer to where deserialized data should be stored.
-	DeserializeFromYaml(data []byte, schema Schema, destination any) error
-
-	// Convert converts data using Schema.
-	//
-	// Expects destination to be a pointer to where deserialized data should be stored.
-	Convert(data any, schema Schema, destination any) error
-}
+// Validators Map of custom converters.
+//
+// Intended to be used for custom validation logic of user-defined types like structs.
+type Validators map[reflect.Type]Validator
 
 // Schema structs that represent a JSON-Like schema.
 type Schema interface {
@@ -112,15 +122,17 @@ const (
 
 func NewDynamicSchema() *DynamicSchema {
 	return &DynamicSchema{
-		DefaultSchemaNodeKey: "default",
+		DefaultSchemaNodeKey: DynamicSchemaDefaultNodeKey,
 		Nodes:                nil,
 		ValidSchemaNodeKeys:  nil,
 	}
 }
 
+type ChildNodes map[string]Schema
+
 // DynamicSchemaNode defines a single specific schema node within a DynamicSchema.
 //
-// Useful when recursively setting data in a nested data structure during the creation of new nesting structure by discovering the exact type to use at each CollectionMemberSegment in a Path.
+// Useful when recursively setting data in a nested data structure during the creation of new nesting structure by discovering the exact type to use at each path.CollectionMemberSegment in a Path.
 type DynamicSchemaNode struct {
 	// The full type of the data.
 	Type reflect.Type
@@ -129,7 +141,7 @@ type DynamicSchemaNode struct {
 	Kind reflect.Kind
 
 	// Optional default value to use for new initializations.
-	DefaultValue interface{}
+	DefaultValue func() reflect.Value
 
 	// Indicates if DefaultValue has been set since it can be nil.
 	IsDefaultValueSet bool
@@ -146,7 +158,7 @@ type DynamicSchemaNode struct {
 	//		For each entry, it is important to specify the key type using ChildNodesAssociativeCollectionEntriesKeySchema.
 	// 	- Specific elements at indexes in a linear collection like slice or array.
 	// 	- All struct top level members specifically those that are User defined.
-	ChildNodes map[string]Schema
+	ChildNodes ChildNodes
 
 	// Schema for what the current DynamicSchemaNode points to. Mandatory if Kind is reflect.Pointer
 	ChildNodesPointerSchema Schema
@@ -197,6 +209,9 @@ var (
 	// ErrSchemaProcessorError is the base error for DataProcessor interface.
 	ErrSchemaProcessorError = errors.New("schema processing encountered an error")
 
+	// ErrSchemaPathError is the base error for GetSchemaAtPath.
+	ErrSchemaPathError = errors.New("schema path error")
+
 	// ErrDataValidationAgainstSchemaFailed for when schema validation rule fails.
 	ErrDataValidationAgainstSchemaFailed = errors.New("data validation against schema failed")
 
@@ -207,7 +222,7 @@ var (
 	ErrDataConversionFailed = errors.New("data conversion failed")
 )
 
-// Error for when DataProcessor validation execution fails.
+// Error for when DataProcessor execution fails.
 type Error struct {
 	Err          error
 	FunctionName string

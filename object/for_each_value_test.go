@@ -6,15 +6,12 @@ import (
 
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
-	"github.com/rogonion/go-json/schema"
 )
 
 func TestObject_ForEachValue(t *testing.T) {
-	forEach := NewForEachValue(schema.NewProcessor(true, nil, nil))
-
 	for testData := range ForEachValueTestData {
 		res := make([]any, 0)
-		forEach.ForEach(testData.Object, testData.Path, func(jsonPath path.RecursiveDescentSegment, value any) bool {
+		NewForEachValue().ForEach(testData.Object, testData.Path, func(jsonPath path.RecursiveDescentSegment, value any) bool {
 			res = append(res, value)
 			return false
 		})

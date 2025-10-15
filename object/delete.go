@@ -68,7 +68,7 @@ func (n *DeleteValue) recursiveDelete(currentValue reflect.Value, currentPathSeg
 	if mapKeyType, _, ok := core.GetMapKeyValueType(currentValue); ok {
 		if recursiveSegment.IsKey {
 			var mapKey any
-			if err := n.schemaProcessor.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
+			if err := n.defaultConverter.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
 				n.lastError = NewError(err, FunctionName, fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType), currentValue.Interface(), currentPath)
 			} else {
 				mapKeyR := reflect.ValueOf(mapKey)
@@ -143,7 +143,7 @@ func (n *DeleteValue) recursiveDelete(currentValue reflect.Value, currentPathSeg
 				}
 
 				var mapKey any
-				if err := n.schemaProcessor.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
+				if err := n.defaultConverter.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
 					n.lastError = NewError(err, FunctionName, fmt.Sprintf("convert key %s to type %v failed", unionKey.Key, mapKeyType), currentValue.Interface(), currentPath)
 					continue
 				}
@@ -786,9 +786,18 @@ func (n *DeleteValue) Delete(root any, jsonPath path.JSONPath) (any, uint64, err
 	return modifiedValue.Interface(), n.noOfModifications, n.lastError
 }
 
-func NewDeleteValue(schemaProcessor schema.DataProcessor) *DeleteValue {
+func (n *DeleteValue) WithDefaultConverter(value schema.DefaultConverter) *DeleteValue {
+	n.defaultConverter = value
+	return n
+}
+
+func (n *DeleteValue) SetDefaultConverter(value schema.DefaultConverter) {
+	n.defaultConverter = value
+}
+
+func NewDeleteValue() *DeleteValue {
 	n := new(DeleteValue)
-	n.schemaProcessor = schemaProcessor
+	n.defaultConverter = schema.NewConversion()
 	return n
 }
 

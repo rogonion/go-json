@@ -1,4 +1,4 @@
-package schemapath
+package schema
 
 import (
 	"fmt"
@@ -6,13 +6,12 @@ import (
 
 	"github.com/rogonion/go-json/internal"
 	jsonpath "github.com/rogonion/go-json/path"
-	"github.com/rogonion/go-json/schema"
 )
 
-// GetSchemaAtPath returns schema.Schema found at SchemaPath.
+// GetSchemaAtPath returns Schema found at SchemaPath.
 //
 // Expects an absolute path to specific data.
-func GetSchemaAtPath[T SchemaPath](path T, schema schema.Schema) (*schema.DynamicSchemaNode, error) {
+func GetSchemaAtPath[T SchemaPath](path T, schema Schema) (*DynamicSchemaNode, error) {
 	const FunctionName = "GetSchemaAtPath"
 
 	var pathToSchema jsonpath.RecursiveDescentSegment
@@ -26,36 +25,36 @@ func GetSchemaAtPath[T SchemaPath](path T, schema schema.Schema) (*schema.Dynami
 			pathToSchema = parsedJsonPath[0]
 			break
 		}
-		return nil, NewError(ErrSchemaPathError, FunctionName, "Parsed JSON path contains multiple recursive descent segments", schema, nil)
+		return nil, NewError(ErrSchemaPathError, FunctionName, "Parsed JSON path contains multiple recursive descent segments", schema, nil, nil)
 	case jsonpath.RecursiveDescentSegments:
 		if len(p) == 1 {
 			pathToSchema = p[0]
 			break
 		}
-		return nil, NewError(ErrSchemaPathError, FunctionName, "path contains multiple recursive descent segments", schema, nil)
+		return nil, NewError(ErrSchemaPathError, FunctionName, "path contains multiple recursive descent segments", schema, nil, nil)
 	default:
-		return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", schema, nil)
+		return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", schema, nil, nil)
 	}
 
-	n := new(getSchemaAtPath)
+	n := new(schemaAtPath)
 	n.RecursiveDescentSegment = pathToSchema
 	return n.recursiveGetSchemaAtPath(internal.PathSegmentsIndexes{CurrentCollection: 0, LastCollection: len(pathToSchema) - 1}, schema)
 }
 
-func (n *getSchemaAtPath) recursiveGetSchemaAtPath(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema schema.Schema) (*schema.DynamicSchemaNode, error) {
+func (n *schemaAtPath) recursiveGetSchemaAtPath(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema Schema) (*DynamicSchemaNode, error) {
 	const FunctionName = "recursiveGetSchemaAtPath"
 
 	switch s := currentSchema.(type) {
-	case *schema.DynamicSchema:
+	case *DynamicSchema:
 		return n.recursiveGetDynamicSchemaAtPath(currentPathSegmentIndexes, s)
-	case *schema.DynamicSchemaNode:
+	case *DynamicSchemaNode:
 		return n.recursiveGetDynamicSchemaNodeAtPath(currentPathSegmentIndexes, s)
 	default:
-		return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported schema type", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+		return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported schema type", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 	}
 }
 
-func (n *getSchemaAtPath) recursiveGetDynamicSchemaAtPath(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema *schema.DynamicSchema) (*schema.DynamicSchemaNode, error) {
+func (n *schemaAtPath) recursiveGetDynamicSchemaAtPath(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema *DynamicSchema) (*DynamicSchemaNode, error) {
 	const FunctionName = "recursiveGetDynamicSchemaAtPath"
 
 	if len(currentSchema.DefaultSchemaNodeKey) > 0 {
@@ -68,7 +67,7 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaAtPath(currentPathSegmentInde
 	}
 
 	if len(currentSchema.Nodes) == 0 {
-		return nil, NewError(ErrSchemaPathError, FunctionName, "no schema nodes found", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+		return nil, NewError(ErrSchemaPathError, FunctionName, "no schema nodes found", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 	}
 
 	var lastSchemaNodeErr error
@@ -87,11 +86,11 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaAtPath(currentPathSegmentInde
 	return nil, lastSchemaNodeErr
 }
 
-func (n *getSchemaAtPath) getDefaultDynamicSchemaNode(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema *schema.DynamicSchema) (*schema.DynamicSchemaNode, error) {
+func (n *schemaAtPath) getDefaultDynamicSchemaNode(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema *DynamicSchema) (*DynamicSchemaNode, error) {
 	const FunctionName = "getDefaultDynamicSchemaNode"
 
 	if len(currentSchema.Nodes) == 0 {
-		return nil, NewError(ErrSchemaPathError, FunctionName, "no schema nodes found", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+		return nil, NewError(ErrSchemaPathError, FunctionName, "no schema nodes found", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 	}
 
 	if currentSchema.DefaultSchemaNodeKey != "" {
@@ -106,17 +105,17 @@ func (n *getSchemaAtPath) getDefaultDynamicSchemaNode(currentPathSegmentIndexes 
 	return nil, nil
 }
 
-func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema *schema.DynamicSchemaNode) (*schema.DynamicSchemaNode, error) {
+func (n *schemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegmentIndexes internal.PathSegmentsIndexes, currentSchema *DynamicSchemaNode) (*DynamicSchemaNode, error) {
 	const FunctionName = "recursiveGetDynamicSchemaNodeAtPath"
 
 	if currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		return nil, NewError(ErrSchemaPathError, FunctionName, "current path segment indexes exhausted", currentSchema, n.RecursiveDescentSegment)
+		return nil, NewError(ErrSchemaPathError, FunctionName, "current path segment indexes exhausted", currentSchema, nil, n.RecursiveDescentSegment)
 	}
 
 	currentPathSegment := n.RecursiveDescentSegment[currentPathSegmentIndexes.CurrentCollection]
 
 	if currentPathSegment == nil {
-		return nil, NewError(ErrSchemaPathError, FunctionName, "current path segment empty", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+		return nil, NewError(ErrSchemaPathError, FunctionName, "current path segment empty", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 	}
 
 	if currentPathSegment.IsKeyRoot {
@@ -124,8 +123,8 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegment
 			return currentSchema, nil
 		}
 
-		newIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1, LastCollection: currentPathSegmentIndexes.LastCollection}
-		return n.recursiveGetDynamicSchemaNodeAtPath(newIndexes, currentSchema)
+		nextPathSegmentIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1, LastCollection: currentPathSegmentIndexes.LastCollection}
+		return n.recursiveGetDynamicSchemaNodeAtPath(nextPathSegmentIndexes, currentSchema)
 	}
 
 	var collectionKey string
@@ -134,13 +133,13 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegment
 	} else if currentPathSegment.IsIndex {
 		collectionKey = fmt.Sprintf("%d", currentPathSegment.Index)
 	} else {
-		return nil, NewError(ErrSchemaPathError, FunctionName, "current path segment is not key or index", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+		return nil, NewError(ErrSchemaPathError, FunctionName, "current path segment is not key or index", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 	}
 
 	switch currentSchema.Kind {
 	case reflect.Pointer:
 		if currentSchema.ChildNodesPointerSchema == nil {
-			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for value that pointer points to not found", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for value that pointer points to not found", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 		}
 
 		return n.recursiveGetSchemaAtPath(currentPathSegmentIndexes, currentSchema.ChildNodesPointerSchema)
@@ -149,38 +148,38 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegment
 			if associativeCollectionEntrySchema, ok := currentSchema.ChildNodes[collectionKey]; ok {
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					switch aces := associativeCollectionEntrySchema.(type) {
-					case *schema.DynamicSchemaNode:
+					case *DynamicSchemaNode:
 						return aces, nil
-					case *schema.DynamicSchema:
+					case *DynamicSchema:
 						nextPathSegmentIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1, LastCollection: currentPathSegmentIndexes.LastCollection}
 						return n.getDefaultDynamicSchemaNode(nextPathSegmentIndexes, aces)
 					default:
-						return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", aces, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+						return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported schema type", aces, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 					}
 				}
 
 				nextPathSegmentIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1, LastCollection: currentPathSegmentIndexes.LastCollection}
-				return n.recursiveGetSchemaAtPath(nextPathSegmentIndexes, associativeCollectionEntrySchema)
+				if result, err := n.recursiveGetSchemaAtPath(nextPathSegmentIndexes, associativeCollectionEntrySchema); err == nil {
+					return result, nil
+				}
 			}
 		}
 
 		if currentSchema.ChildNodesAssociativeCollectionEntriesKeySchema == nil || currentSchema.ChildNodesAssociativeCollectionEntriesValueSchema == nil {
-			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for associative collection keys and/or values not found", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for associative collection keys and/or values not found", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 		}
 
 		if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
-			nextPathSegmentIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection, LastCollection: currentPathSegmentIndexes.LastCollection}
-
-			newAssociativeCollectionEntryKeySchema := new(schema.DynamicSchemaNode)
-			if value, err := n.recursiveGetSchemaAtPath(nextPathSegmentIndexes, currentSchema.ChildNodesAssociativeCollectionEntriesKeySchema); err != nil {
-				return nil, NewError(err, FunctionName, "default schema for all keys in associative entries not found", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+			newAssociativeCollectionEntryKeySchema := new(DynamicSchemaNode)
+			if value, err := n.recursiveGetSchemaAtPath(currentPathSegmentIndexes, currentSchema.ChildNodesAssociativeCollectionEntriesKeySchema); err != nil {
+				return nil, NewError(err, FunctionName, "default schema for all keys in associative entries not found", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 			} else {
 				*newAssociativeCollectionEntryKeySchema = *value
 			}
 
-			newAssociativeCollectionEntrySchema := new(schema.DynamicSchemaNode)
-			if value, err := n.recursiveGetSchemaAtPath(nextPathSegmentIndexes, currentSchema.ChildNodesAssociativeCollectionEntriesValueSchema); err != nil {
-				return nil, NewError(err, FunctionName, "default schema for all values in associative entries not found", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+			newAssociativeCollectionEntrySchema := new(DynamicSchemaNode)
+			if value, err := n.recursiveGetSchemaAtPath(currentPathSegmentIndexes, currentSchema.ChildNodesAssociativeCollectionEntriesValueSchema); err != nil {
+				return nil, NewError(err, FunctionName, "default schema for all values in associative entries not found", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 			} else {
 				*newAssociativeCollectionEntrySchema = *value
 			}
@@ -196,13 +195,13 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegment
 			if linearCollectionElementSchema, ok := currentSchema.ChildNodes[collectionKey]; ok {
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					switch lces := linearCollectionElementSchema.(type) {
-					case *schema.DynamicSchemaNode:
+					case *DynamicSchemaNode:
 						return lces, nil
-					case *schema.DynamicSchema:
+					case *DynamicSchema:
 						nextPathSegmentIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1, LastCollection: currentPathSegmentIndexes.LastCollection}
 						return n.getDefaultDynamicSchemaNode(nextPathSegmentIndexes, lces)
 					default:
-						return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", lces, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+						return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", lces, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 					}
 				}
 
@@ -214,18 +213,17 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegment
 		}
 
 		if currentSchema.ChildNodesLinearCollectionElementsSchema == nil {
-			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for linear collection elements not found", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for linear collection elements not found", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 		}
 
 		if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 			switch cnlces := currentSchema.ChildNodesLinearCollectionElementsSchema.(type) {
-			case *schema.DynamicSchemaNode:
+			case *DynamicSchemaNode:
 				return cnlces, nil
-			case *schema.DynamicSchema:
-				nextPathSegmentIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1, LastCollection: currentPathSegmentIndexes.LastCollection}
-				return n.getDefaultDynamicSchemaNode(nextPathSegmentIndexes, cnlces)
+			case *DynamicSchema:
+				return n.getDefaultDynamicSchemaNode(currentPathSegmentIndexes, cnlces)
 			default:
-				return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", cnlces, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+				return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", cnlces, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 			}
 		}
 
@@ -233,19 +231,19 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegment
 		return n.recursiveGetSchemaAtPath(nextPathSegmentIndexes, currentSchema.ChildNodesLinearCollectionElementsSchema)
 	case reflect.Struct:
 		if currentSchema.ChildNodes == nil {
-			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for struct fields is empty", currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+			return nil, NewError(ErrSchemaPathError, FunctionName, "schema for struct fields is empty", currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 		}
 
 		if structFieldSchema, ok := currentSchema.ChildNodes[collectionKey]; ok {
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				switch sfs := structFieldSchema.(type) {
-				case *schema.DynamicSchemaNode:
+				case *DynamicSchemaNode:
 					return sfs, nil
-				case *schema.DynamicSchema:
+				case *DynamicSchema:
 					nextPathSegmentIndexes := internal.PathSegmentsIndexes{CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1, LastCollection: currentPathSegmentIndexes.LastCollection}
 					return n.getDefaultDynamicSchemaNode(nextPathSegmentIndexes, sfs)
 				default:
-					return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", sfs, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+					return nil, NewError(ErrSchemaPathError, FunctionName, "unsupported path type", sfs, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 				}
 			}
 
@@ -253,12 +251,12 @@ func (n *getSchemaAtPath) recursiveGetDynamicSchemaNodeAtPath(currentPathSegment
 			return n.recursiveGetSchemaAtPath(nextPathSegmentIndexes, structFieldSchema)
 		}
 
-		return nil, NewError(ErrSchemaPathError, FunctionName, fmt.Sprintf("schema for struct field %s not found", collectionKey), currentSchema, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
+		return nil, NewError(ErrSchemaPathError, FunctionName, fmt.Sprintf("schema for struct field %s not found", collectionKey), currentSchema, nil, n.RecursiveDescentSegment[:currentPathSegmentIndexes.CurrentCollection+1])
 	default:
 		return currentSchema, nil
 	}
 }
 
-type getSchemaAtPath struct {
+type schemaAtPath struct {
 	RecursiveDescentSegment jsonpath.RecursiveDescentSegment
 }

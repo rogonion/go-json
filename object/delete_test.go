@@ -7,14 +7,12 @@ import (
 
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
-	"github.com/rogonion/go-json/schema"
 )
 
 func TestObject_Delete(t *testing.T) {
 
 	for testData := range DeleteTestData {
-		getValue := NewDeleteValue(schema.NewProcessor(true, nil, nil))
-		res, ok, err := getValue.Delete(testData.Root, testData.Path)
+		res, ok, err := NewDeleteValue().Delete(testData.Root, testData.Path)
 		if ok != testData.ExpectedOk {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",

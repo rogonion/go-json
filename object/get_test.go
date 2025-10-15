@@ -7,14 +7,11 @@ import (
 
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
-	"github.com/rogonion/go-json/schema"
 )
 
 func TestObject_Get(t *testing.T) {
-
 	for testData := range GetTestData {
-		getValue := NewGetValue(schema.NewProcessor(true, nil, nil))
-		res, ok, err := getValue.Get(testData.Root, testData.Path)
+		res, ok, err := NewGetValue().Get(testData.Root, testData.Path)
 		if ok != testData.ExpectedOk {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got ok=", ok, "\n",

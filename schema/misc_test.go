@@ -11,6 +11,20 @@ import (
 	"github.com/rogonion/go-json/path"
 )
 
+func JsonMapSchema() Schema {
+	return &DynamicSchemaNode{
+		Kind: reflect.Map,
+		Type: reflect.TypeOf(map[string]interface{}{}),
+		ChildNodesAssociativeCollectionEntriesKeySchema: &DynamicSchemaNode{
+			Kind: reflect.String,
+			Type: reflect.TypeOf(""),
+		},
+		ChildNodesAssociativeCollectionEntriesValueSchema: &DynamicSchemaNode{
+			Kind: reflect.Interface,
+		},
+	}
+}
+
 type NestedItem struct {
 	ID       int
 	MapData  map[string]interface{}
@@ -79,20 +93,6 @@ func ListOfShapesSchema() Schema {
 			Kind:                    reflect.Pointer,
 			Type:                    reflect.TypeOf(internal.Ptr(x)),
 			ChildNodesPointerSchema: ShapeSchema(),
-		},
-	}
-}
-
-func JsonSchema() Schema {
-	return &DynamicSchemaNode{
-		Kind: reflect.Map,
-		Type: reflect.TypeOf(map[string]interface{}{}),
-		ChildNodesAssociativeCollectionEntriesKeySchema: &DynamicSchemaNode{
-			Kind: reflect.String,
-			Type: reflect.TypeOf(""),
-		},
-		ChildNodesAssociativeCollectionEntriesValueSchema: &DynamicSchemaNode{
-			Kind: reflect.Interface,
 		},
 	}
 }
@@ -455,7 +455,7 @@ func DynamicUserSchema() *DynamicSchema {
 type Pgxuuid struct{}
 
 func (n *Pgxuuid) Convert(data reflect.Value, currentSchema Schema, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
-	const FunctionName = "Convert"
+	const FunctionName = "RecursiveConvert"
 
 	rawValue := data.Interface()
 	switch d := rawValue.(type) {
@@ -463,13 +463,13 @@ func (n *Pgxuuid) Convert(data reflect.Value, currentSchema Schema, pathSegments
 		if uuidString, err := uuid.FromString(d); err == nil {
 			return reflect.ValueOf(uuidString), nil
 		} else {
-			return reflect.Value{}, NewError(err, FunctionName, "convert to uuid from string failed", currentSchema, data, pathSegments)
+			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from string failed", currentSchema, data, pathSegments)
 		}
 	case []byte:
 		if uuidBytes, err := uuid.FromBytes(d); err == nil {
 			return reflect.ValueOf(uuidBytes), nil
 		} else {
-			return reflect.Value{}, NewError(err, FunctionName, "convert to uuid from bytes failed", currentSchema, data, pathSegments)
+			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from bytes failed", currentSchema, data, pathSegments)
 		}
 	default:
 		return reflect.Value{}, NewError(nil, FunctionName, fmt.Sprintf("unsupported type %T", data), currentSchema, data, pathSegments)

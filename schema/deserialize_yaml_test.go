@@ -12,13 +12,8 @@ import (
 
 func TestSchema_DeserializeFromYaml(t *testing.T) {
 	for testData := range deserializeYamlDataTestData {
-		schema := new(Processor)
-		schema.SetValidateOnFirstMatch(testData.ValidateOnFirstMatch)
-		schema.SetValidators(testData.Validators)
-		schema.SetConverters(testData.Converters)
-
 		var res any
-		err := schema.DeserializeFromYaml([]byte(testData.Source), testData.Schema, &res)
+		err := NewDeserialization().WithCustomConverters(testData.Converters).FromYAML([]byte(testData.Source), testData.Schema, &res)
 		if testData.ExpectedOk && err != nil {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",

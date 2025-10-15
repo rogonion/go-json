@@ -1,4 +1,4 @@
-package schemapath
+package schema
 
 import (
 	"errors"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
-	"github.com/rogonion/go-json/schema"
 )
 
 func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
@@ -56,21 +55,21 @@ func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
 
 type getSchemaAtPathData struct {
 	internal.TestData
-	Schema       schema.Schema
+	Schema       Schema
 	Path         path.JSONPath
 	ExpectedOk   bool
-	ExpectedData *schema.DynamicSchemaNode
+	ExpectedData *DynamicSchemaNode
 }
 
 func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 	if !yield(
 		&getSchemaAtPathData{
-			Schema:     JsonSchema(),
+			Schema:     JsonMapSchema(),
 			Path:       "$.Name",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Interface,
-				AssociativeCollectionEntryKeySchema: &schema.DynamicSchemaNode{
+				AssociativeCollectionEntryKeySchema: &DynamicSchemaNode{
 					Kind: reflect.String,
 					Type: reflect.TypeOf(""),
 				},
@@ -82,10 +81,10 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 
 	if !yield(
 		&getSchemaAtPathData{
-			Schema:     JsonSchema(),
+			Schema:     JsonMapSchema(),
 			Path:       "$.Addresses[1].Zipcode",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Interface,
 			},
 		},
@@ -98,7 +97,7 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 			Schema:     ShapeSchema(),
 			Path:       "$.Side",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Float64,
 				Type: reflect.TypeOf(0.0),
 			},
@@ -112,10 +111,10 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 			Schema:     UserWithAddressSchema(),
 			Path:       "$.Address.ZipCode",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Pointer,
 				Type: reflect.TypeOf(internal.Ptr("")),
-				ChildNodesPointerSchema: &schema.DynamicSchemaNode{
+				ChildNodesPointerSchema: &DynamicSchemaNode{
 					Kind: reflect.String,
 					Type: reflect.TypeOf(""),
 				},
@@ -130,7 +129,7 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 			Schema:     CompanySchema(),
 			Path:       "$.Employees[2].ID",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Int,
 				Type: reflect.TypeOf(0),
 			},
@@ -144,10 +143,10 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 			Schema:     EmployeeSchema(),
 			Path:       "$.ProjectHours['1']",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Int,
 				Type: reflect.TypeOf(0),
-				AssociativeCollectionEntryKeySchema: &schema.DynamicSchemaNode{
+				AssociativeCollectionEntryKeySchema: &DynamicSchemaNode{
 					Kind: reflect.String,
 					Type: reflect.TypeOf(""),
 				},
@@ -162,7 +161,7 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 			Schema:     EmployeeSchema(),
 			Path:       "$.ProjectHours['1'].two",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Int,
 				Type: reflect.TypeOf(0),
 			},
@@ -176,7 +175,7 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 			Schema:     ListOfShapesSchema(),
 			Path:       "$[1].Radius",
 			ExpectedOk: true,
-			ExpectedData: &schema.DynamicSchemaNode{
+			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Float64,
 				Type: reflect.TypeOf(0.0),
 			},

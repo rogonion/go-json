@@ -13,9 +13,7 @@ import (
 func TestObject_Set(t *testing.T) {
 
 	for testData := range SetTestData {
-		setValue := NewSetValue(schema.NewProcessor(true, nil, nil))
-
-		res, ok, err := setValue.Set(testData.Root, testData.Path, testData.ValueToSet, testData.Schema)
+		res, ok, err := NewSetValue().Set(testData.Root, testData.Path, testData.ValueToSet, testData.Schema)
 		if ok != testData.ExpectedOk {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
@@ -39,7 +37,7 @@ func TestObject_Set(t *testing.T) {
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
 				"res=", internal.JsonStringifyMust(res), "\n",
-				"JSON testData.Expected=", internal.JsonStringifyMust(testData.ExpectedValue),
+				"Expected=", internal.JsonStringifyMust(testData.ExpectedValue),
 			)
 		}
 	}

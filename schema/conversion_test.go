@@ -9,14 +9,9 @@ import (
 )
 
 func TestSchema_Convert(t *testing.T) {
-	for testData := range convertDataTestData {
-		schema := new(Processor)
-		schema.SetValidateOnFirstMatch(testData.ValidateOnFirstMatch)
-		schema.SetValidators(testData.Validators)
-		schema.SetConverters(testData.Converters)
-
+	for testData := range conversionDataTestData {
 		var res any
-		err := schema.Convert(testData.Source, testData.Schema, &res)
+		err := NewConversion().WithCustomConverters(testData.Converters).Convert(testData.Source, testData.Schema, &res)
 		if testData.ExpectedOk && err != nil {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",
@@ -56,20 +51,18 @@ func TestSchema_Convert(t *testing.T) {
 	}
 }
 
-type convertData struct {
+type conversionData struct {
 	internal.TestData
-	Schema               Schema
-	Source               any
-	ValidateOnFirstMatch bool
-	Validators           map[reflect.Type]Validator
-	Converters           map[reflect.Type]Converter
-	ExpectedOk           bool
-	ExpectedData         any
+	Schema       Schema
+	Source       any
+	Converters   Converters
+	ExpectedOk   bool
+	ExpectedData any
 }
 
-func convertDataTestData(yield func(data *convertData) bool) {
+func conversionDataTestData(yield func(data *conversionData) bool) {
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema: DynamicUserSchema(),
 			Source: map[string]interface{}{
 				"ID":    "1",
@@ -88,7 +81,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema: &DynamicSchemaNode{
 				Kind: reflect.Map,
 				Type: reflect.TypeOf(map[int]int{}),
@@ -118,7 +111,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema:       &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
 			Source:       "123",
 			ExpectedOk:   true,
@@ -129,7 +122,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema:       &DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")},
 			Source:       456,
 			ExpectedOk:   true,
@@ -140,7 +133,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema:       &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
 			Source:       123.45,
 			ExpectedOk:   true,
@@ -151,7 +144,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema:       &DynamicSchemaNode{Kind: reflect.Float64, Type: reflect.TypeOf(float64(0))},
 			Source:       "25.7",
 			ExpectedOk:   true,
@@ -162,7 +155,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema:       &DynamicSchemaNode{Kind: reflect.Bool, Type: reflect.TypeOf(true)},
 			Source:       25,
 			ExpectedOk:   true,
@@ -173,7 +166,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema: UserWithAddressSchema(),
 			Source: map[string]interface{}{
 				"Name": "Bob",
@@ -196,7 +189,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema: &DynamicSchemaNode{
 				Kind:                                     reflect.Slice,
 				Type:                                     reflect.TypeOf(make([]any, 0)),
@@ -211,7 +204,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 	}
 
 	if !yield(
-		&convertData{
+		&conversionData{
 			Schema: &DynamicSchemaNode{
 				Kind:                                     reflect.Array,
 				Type:                                     reflect.TypeOf([3]any{}),
@@ -234,7 +227,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 		}
 
 		if !yield(
-			&convertData{
+			&conversionData{
 				Schema: &DynamicSchemaNode{
 					Kind: reflect.Struct,
 					Type: reflect.TypeOf(custom{}),
@@ -279,7 +272,7 @@ func convertDataTestData(yield func(data *convertData) bool) {
 		}
 
 		if !yield(
-			&convertData{
+			&conversionData{
 				Schema: &DynamicSchemaNode{
 					Kind: reflect.Map,
 					Type: reflect.TypeOf(map[string]interface{}{}),
