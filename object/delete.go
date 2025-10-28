@@ -11,7 +11,45 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
-func (n *DeleteValue) recursiveDelete(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
+func (n *Object) Delete(jsonPath path.JSONPath) (uint64, error) {
+	const FunctionName = "Delete"
+
+	n.noOfModifications = 0
+	n.lastError = nil
+
+	if jsonPath == "$" || jsonPath == "" {
+		n.source = reflect.Zero(n.source.Type())
+		return 1, nil
+	}
+
+	n.recursiveDescentSegments = jsonPath.Parse()
+
+	currentPathSegmentIndexes := internal.PathSegmentsIndexes{
+		CurrentRecursive: 0,
+		LastRecursive:    len(n.recursiveDescentSegments) - 1,
+	}
+	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive {
+		return 0, NewError(ErrPathSegmentInvalidError, FunctionName, "recursiveDescentSegments empty", n.source, nil)
+	}
+	currentPathSegmentIndexes.CurrentCollection = 0
+	currentPathSegmentIndexes.LastCollection = len(n.recursiveDescentSegments[0]) - 1
+	if currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
+		return 0, NewError(ErrPathSegmentInvalidError, FunctionName, "recursiveDescentSegments empty", n.source, nil)
+	}
+
+	if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
+		n.source = n.recursiveDelete(n.source, currentPathSegmentIndexes, make(path.RecursiveDescentSegment, 0))
+	} else {
+		n.source = n.recursiveDescentDelete(n.source, currentPathSegmentIndexes, make(path.RecursiveDescentSegment, 0))
+	}
+
+	if n.noOfModifications > 0 {
+		return n.noOfModifications, nil
+	}
+	return n.noOfModifications, n.lastError
+}
+
+func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveDelete"
 
 	recursiveSegment := n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]
@@ -604,7 +642,7 @@ func (n *DeleteValue) recursiveDelete(currentValue reflect.Value, currentPathSeg
 	return currentValue
 }
 
-func (n *DeleteValue) recursiveDescentDelete(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
+func (n *Object) recursiveDescentDelete(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveDescentDelete"
 
 	recursiveDescentSearchSegment := n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]
@@ -651,7 +689,7 @@ func (n *DeleteValue) recursiveDescentDelete(currentValue reflect.Value, current
 
 			keyPathSegment := &path.CollectionMemberSegment{
 				IsKey: true,
-				Key:   n.MapKeyString(mapKey),
+				Key:   mapKeyString(mapKey),
 			}
 
 			if keyPathSegment.Key == recursiveDescentSearchSegment.Key {
@@ -749,58 +787,4 @@ func (n *DeleteValue) recursiveDescentDelete(currentValue reflect.Value, current
 		n.lastError = NewError(ErrValueAtPathSegmentInvalidError, FunctionName, fmt.Sprintf("unsupported value at recursive descent search segment %s", recursiveDescentSearchSegment), currentValue.Interface(), currentPath)
 	}
 	return currentValue
-}
-
-func (n *DeleteValue) Delete(root any, jsonPath path.JSONPath) (any, uint64, error) {
-	const FunctionName = "Delete"
-
-	if jsonPath == "$" || jsonPath == "" {
-		return reflect.Zero(reflect.TypeOf(root)).Interface(), 1, nil
-	}
-
-	n.recursiveDescentSegments = jsonPath.Parse()
-
-	currentPathSegmentIndexes := internal.PathSegmentsIndexes{
-		CurrentRecursive: 0,
-		LastRecursive:    len(n.recursiveDescentSegments) - 1,
-	}
-	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive {
-		return nil, 0, NewError(ErrPathSegmentInvalidError, FunctionName, "recursiveDescentSegments empty", root, nil)
-	}
-	currentPathSegmentIndexes.CurrentCollection = 0
-	currentPathSegmentIndexes.LastCollection = len(n.recursiveDescentSegments[0]) - 1
-	if currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		return nil, 0, NewError(ErrPathSegmentInvalidError, FunctionName, "recursiveDescentSegments empty", root, nil)
-	}
-
-	var modifiedValue reflect.Value
-	if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-		modifiedValue = n.recursiveDelete(reflect.ValueOf(root), currentPathSegmentIndexes, make(path.RecursiveDescentSegment, 0))
-	} else {
-		modifiedValue = n.recursiveDescentDelete(reflect.ValueOf(root), currentPathSegmentIndexes, make(path.RecursiveDescentSegment, 0))
-	}
-
-	if n.noOfModifications > 0 {
-		return modifiedValue.Interface(), n.noOfModifications, nil
-	}
-	return modifiedValue.Interface(), n.noOfModifications, n.lastError
-}
-
-func (n *DeleteValue) WithDefaultConverter(value schema.DefaultConverter) *DeleteValue {
-	n.defaultConverter = value
-	return n
-}
-
-func (n *DeleteValue) SetDefaultConverter(value schema.DefaultConverter) {
-	n.defaultConverter = value
-}
-
-func NewDeleteValue() *DeleteValue {
-	n := new(DeleteValue)
-	n.defaultConverter = schema.NewConversion()
-	return n
-}
-
-type DeleteValue struct {
-	jsonPathModifications
 }

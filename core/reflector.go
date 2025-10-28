@@ -2,7 +2,7 @@ package core
 
 import "reflect"
 
-// IsArray Checks if an object is an array.
+// IsArray Checks if an objectV1 is an array.
 //
 // Returns:
 //   - array element type.
@@ -17,7 +17,7 @@ func IsArray(obj any) (reflect.Type, bool) {
 	return objType.Elem(), true
 }
 
-// IsSlice Checks if an object is a slice.
+// IsSlice Checks if an objectV1 is a slice.
 //
 // Returns:
 //   - slice element type.
@@ -32,7 +32,7 @@ func IsSlice(obj any) (reflect.Type, bool) {
 	return objType.Elem(), true
 }
 
-// IsMap Checks if an object is a map.
+// IsMap Checks if an objectV1 is a map.
 //
 // Returns:
 //   - map key type.

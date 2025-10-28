@@ -12,7 +12,8 @@ import (
 func TestObject_Delete(t *testing.T) {
 
 	for testData := range DeleteTestData {
-		res, ok, err := NewDeleteValue().Delete(testData.Root, testData.Path)
+		obj := NewObject(testData.Root)
+		ok, err := obj.Delete(testData.Path)
 		if ok != testData.ExpectedOk {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
@@ -31,11 +32,11 @@ func TestObject_Delete(t *testing.T) {
 			}
 		}
 
-		if !reflect.DeepEqual(res, testData.ExpectedValue) {
+		if !reflect.DeepEqual(obj.GetSource(), testData.ExpectedValue) {
 			t.Error(
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
-				"res=", internal.JsonStringifyMust(res), "\n",
+				"res=", internal.JsonStringifyMust(obj.GetSource()), "\n",
 				"JSON testData.Expected=", internal.JsonStringifyMust(testData.ExpectedValue),
 			)
 		}

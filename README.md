@@ -68,7 +68,7 @@ Useful for the following purposes:
 - Validating if an object adheres to a defined schema. Allows extension with custom validators.
 - Converting an object to a schema defined type. Allows extension with custom converters.
 - Deserializing data from json or yaml to a schema defined type. Allows extension with custom deserializers.
-- Recursively creating new nested objects with the [Set](object/set.go) module. For example, a source empty nil value of
+- Recursively creating new nested objects with the [Set](objectV1/set.go) module. For example, a source empty nil value of
   type any can end up being an array of pointers to structs if that is the schema definition.
 - Fetch the schema of data at a `JSONPath`.
 
@@ -83,8 +83,9 @@ Useful for the following purposes:
 - Collection types:
     - Linear:
         - `arrays`
+        - `slices`
     - Associative:
         - `structs`
-        - `slices`
+        - `maps`
 - `pointers` to values of primitive and collection types.
 

@@ -7,33 +7,10 @@ import (
 
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
-	"github.com/rogonion/go-json/schema"
 )
 
-type jsonPathModifications struct {
-	jsonPath
-	noOfModifications uint64
-	lastError         error
-}
-
-func (n *jsonPath) SetDefaultConverter(value schema.DefaultConverter) {
-	n.defaultConverter = value
-}
-
-func (n *jsonPath) MapKeyString(mapKey reflect.Value) string {
-	if mapKey.Kind() == reflect.String {
-		return mapKey.String()
-	}
-	return fmt.Sprintf("%v", internal.JsonStringifyMust(mapKey.Interface()))
-}
-
-type jsonPath struct {
-	recursiveDescentSegments path.RecursiveDescentSegments
-	defaultConverter         schema.DefaultConverter
-}
-
 var (
-	// ErrObjectProcessorError is the base error for DataProcessor interface.
+	// ErrObjectProcessorError is the base error for object processing.
 	ErrObjectProcessorError = errors.New("object processing failed")
 
 	//ErrPathSegmentInvalidError for when a path segment is not found or not expected.
@@ -43,7 +20,7 @@ var (
 	ErrValueAtPathSegmentInvalidError = errors.New("value at path segment invalid")
 )
 
-// Error for when DataProcessor validation execution fails.
+// Error for when object processing fails.
 type Error struct {
 	Err          error
 	FunctionName string
@@ -93,4 +70,11 @@ func (e *Error) String() string {
 		str = str + fmt.Sprintf(" \nData: %+v", internal.JsonStringifyMust(e.Data))
 	}
 	return str
+}
+
+func mapKeyString(mapKey reflect.Value) string {
+	if mapKey.Kind() == reflect.String {
+		return mapKey.String()
+	}
+	return fmt.Sprintf("%v", internal.JsonStringifyMust(mapKey.Interface()))
 }

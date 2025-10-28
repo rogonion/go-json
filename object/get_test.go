@@ -11,7 +11,7 @@ import (
 
 func TestObject_Get(t *testing.T) {
 	for testData := range GetTestData {
-		res, ok, err := NewGetValue().Get(testData.Root, testData.Path)
+		res, ok, err := NewObject(testData.Root).Get(testData.Path)
 		if ok != testData.ExpectedOk {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got ok=", ok, "\n",

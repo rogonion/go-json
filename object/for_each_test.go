@@ -11,7 +11,7 @@ import (
 func TestObject_ForEachValue(t *testing.T) {
 	for testData := range ForEachValueTestData {
 		res := make([]any, 0)
-		NewForEachValue().ForEach(testData.Object, testData.Path, func(jsonPath path.RecursiveDescentSegment, value any) bool {
+		NewObject(testData.Object).ForEach(testData.Path, func(jsonPath path.RecursiveDescentSegment, value any) bool {
 			res = append(res, value)
 			return false
 		})
@@ -27,16 +27,16 @@ func TestObject_ForEachValue(t *testing.T) {
 	}
 }
 
-type ForEachValueData struct {
+type ForEachData struct {
 	internal.TestData
 	Object   any
 	Path     path.JSONPath
 	Expected any
 }
 
-func ForEachValueTestData(yield func(data *ForEachValueData) bool) {
+func ForEachValueTestData(yield func(data *ForEachData) bool) {
 	if !yield(
-		&ForEachValueData{
+		&ForEachData{
 			Object: []any{
 				map[string]any{"User": User{Name: "Alice"}},
 				ComplexData{
@@ -58,7 +58,7 @@ func ForEachValueTestData(yield func(data *ForEachValueData) bool) {
 	}
 
 	if !yield(
-		&ForEachValueData{
+		&ForEachData{
 			Object: []any{
 				map[string]any{
 					"one": struct {
@@ -100,7 +100,7 @@ func ForEachValueTestData(yield func(data *ForEachValueData) bool) {
 	}
 
 	if !yield(
-		&ForEachValueData{
+		&ForEachData{
 			Object: []any{
 				map[string]any{
 					"one": struct {
@@ -142,7 +142,7 @@ func ForEachValueTestData(yield func(data *ForEachValueData) bool) {
 	}
 
 	if !yield(
-		&ForEachValueData{
+		&ForEachData{
 			Object: []any{
 				map[string]any{
 					"one": struct {
@@ -188,7 +188,7 @@ func ForEachValueTestData(yield func(data *ForEachValueData) bool) {
 	}
 
 	if !yield(
-		&ForEachValueData{
+		&ForEachData{
 			Object: map[string]any{
 				"child": []any{
 					nil,
@@ -224,7 +224,7 @@ func ForEachValueTestData(yield func(data *ForEachValueData) bool) {
 	}
 
 	if !yield(
-		&ForEachValueData{
+		&ForEachData{
 			Object: map[string]any{
 				"child": []any{
 					nil,

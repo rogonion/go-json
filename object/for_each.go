@@ -9,7 +9,31 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
-func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
+func (n *Object) ForEach(jsonPath path.JSONPath, ifValueFoundInObject IfValueFoundInObject) {
+	n.recursiveDescentSegments = jsonPath.Parse()
+	n.ifValueFoundInObject = ifValueFoundInObject
+
+	currentPathSegmentIndexes := internal.PathSegmentsIndexes{
+		CurrentRecursive: 0,
+		LastRecursive:    len(n.recursiveDescentSegments) - 1,
+	}
+	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive {
+		return
+	}
+	currentPathSegmentIndexes.CurrentCollection = 0
+	currentPathSegmentIndexes.LastCollection = len(n.recursiveDescentSegments[0]) - 1
+	if currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
+		return
+	}
+
+	if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
+		n.recursiveForEachValue(n.source, currentPathSegmentIndexes, path.RecursiveDescentSegment{})
+	} else {
+		n.recursiveDescentForEachValue(n.source, currentPathSegmentIndexes, path.RecursiveDescentSegment{})
+	}
+}
+
+func (n *Object) recursiveForEachValue(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
 		return false
 	}
@@ -121,7 +145,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 				}
 			}
 
-			return n.selectorLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
+			return n.selectorForEachLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
 		}
 
 		return false
@@ -226,7 +250,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 				}
 			}
 
-			return n.selectorLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
+			return n.selectorForEachLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
 		}
 
 		return false
@@ -300,7 +324,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 				}
 			}
 
-			return n.selectorLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
+			return n.selectorForEachLoop(selectorSlice, selectorSliceElementPaths, currentPathSegmentIndexes, currentPath)
 		}
 
 		return false
@@ -309,7 +333,7 @@ func (n *ForEachValue) recursiveForEachValue(currentValue reflect.Value, current
 	return false
 }
 
-func (n *ForEachValue) selectorLoop(selectorSlice reflect.Value, selectorSliceElementPaths path.RecursiveDescentSegment, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
+func (n *Object) selectorForEachLoop(selectorSlice reflect.Value, selectorSliceElementPaths path.RecursiveDescentSegment, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
 	if selectorSlice.Len() == 0 {
 		return false
 	}
@@ -352,7 +376,7 @@ func (n *ForEachValue) selectorLoop(selectorSlice reflect.Value, selectorSliceEl
 	return false
 }
 
-func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
+func (n *Object) recursiveDescentForEachValue(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
 		return false
 	}
@@ -491,49 +515,3 @@ func (n *ForEachValue) recursiveDescentForEachValue(currentValue reflect.Value, 
 
 	return false
 }
-
-func (n *ForEachValue) ForEach(root any, jsonPath path.JSONPath, ifValueFoundInObject IfValueFoundInObject) {
-	n.recursiveDescentSegments = jsonPath.Parse()
-	n.ifValueFoundInObject = ifValueFoundInObject
-
-	currentPathSegmentIndexes := internal.PathSegmentsIndexes{
-		CurrentRecursive: 0,
-		LastRecursive:    len(n.recursiveDescentSegments) - 1,
-	}
-	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive {
-		return
-	}
-	currentPathSegmentIndexes.CurrentCollection = 0
-	currentPathSegmentIndexes.LastCollection = len(n.recursiveDescentSegments[0]) - 1
-	if currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		return
-	}
-
-	if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-		n.recursiveForEachValue(reflect.ValueOf(root), currentPathSegmentIndexes, path.RecursiveDescentSegment{})
-	} else {
-		n.recursiveDescentForEachValue(reflect.ValueOf(root), currentPathSegmentIndexes, path.RecursiveDescentSegment{})
-	}
-}
-
-func (n *ForEachValue) WithDefaultConverter(value schema.DefaultConverter) *ForEachValue {
-	n.defaultConverter = value
-	return n
-}
-
-func (n *ForEachValue) SetDefaultConverter(value schema.DefaultConverter) {
-	n.defaultConverter = value
-}
-
-func NewForEachValue() *ForEachValue {
-	n := new(ForEachValue)
-	n.defaultConverter = schema.NewConversion()
-	return n
-}
-
-type ForEachValue struct {
-	jsonPath
-	ifValueFoundInObject IfValueFoundInObject
-}
-
-type IfValueFoundInObject func(jsonPath path.RecursiveDescentSegment, value any) bool

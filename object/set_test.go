@@ -13,7 +13,8 @@ import (
 func TestObject_Set(t *testing.T) {
 
 	for testData := range SetTestData {
-		res, ok, err := NewSetValue().Set(testData.Root, testData.Path, testData.ValueToSet, testData.Schema)
+		obj := NewObject(testData.Root).WithSchema(testData.Schema)
+		ok, err := obj.Set(testData.Path, testData.ValueToSet)
 		if ok != testData.ExpectedOk {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
@@ -32,11 +33,11 @@ func TestObject_Set(t *testing.T) {
 			}
 		}
 
-		if !reflect.DeepEqual(res, testData.ExpectedValue) {
+		if !reflect.DeepEqual(obj.GetSource(), testData.ExpectedValue) {
 			t.Error(
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
-				"res=", internal.JsonStringifyMust(res), "\n",
+				"res=", internal.JsonStringifyMust(obj.GetSource()), "\n",
 				"Expected=", internal.JsonStringifyMust(testData.ExpectedValue),
 			)
 		}
