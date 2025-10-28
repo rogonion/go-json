@@ -18,6 +18,8 @@ func (n *Object) Set(jsonPath path.JSONPath, value any) (uint64, error) {
 		return 1, nil
 	}
 
+	n.noOfModifications = 0
+	n.lastError = nil
 	n.recursiveDescentSegments = jsonPath.Parse()
 	n.valueToSet = value
 
