@@ -22,9 +22,16 @@ The [core set of modules](object) for manipulating an object using `JSONPath` ar
 
 ## Sections
 
+- [Installation](#installation)
 - [JSONPath](#jsonpath)
 - [Supported data type](#supported-data-types)
 - [Additional modules](#additional-modules)
+
+## Installation
+
+```shell
+go get github.com/rogonion/go-json@v1.0.0
+```
 
 ## JSONPath
 
@@ -60,7 +67,8 @@ Such information is used when manipulating data using the core modules like get,
 
 ### Schema
 
-[Module](schema) for defining and working with the schema of an object. This includes the data type as well as the tree structure of
+[Module](schema) for defining and working with the schema of an object. This includes the data type as well as the tree
+structure of
 every simple primitive, linear collection element, or associative collection entry in an object.
 
 Useful for the following purposes:
@@ -68,7 +76,8 @@ Useful for the following purposes:
 - Validating if an object adheres to a defined schema. Allows extension with custom validators.
 - Converting an object to a schema defined type. Allows extension with custom converters.
 - Deserializing data from json or yaml to a schema defined type. Allows extension with custom deserializers.
-- Recursively creating new nested objects with the [Set](objectV1/set.go) module. For example, a source empty nil value of
+- Recursively creating new nested objects with the [Set](objectV1/set.go) module. For example, a source empty nil value
+  of
   type any can end up being an array of pointers to structs if that is the schema definition.
 - Fetch the schema of data at a `JSONPath`.
 
