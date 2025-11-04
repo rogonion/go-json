@@ -30,7 +30,7 @@ The [core set of modules](object) for manipulating an object using `JSONPath` ar
 ## Installation
 
 ```shell
-go get github.com/rogonion/go-json@v1.0.0
+go get github.com/rogonion/go-json@v1.0.1
 ```
 
 ## JSONPath
