@@ -16,6 +16,7 @@ func (n *Object) WithSchema(value schema.Schema) *Object {
 	return n
 }
 
+// GetSource call method when done working with the source.
 func (n *Object) GetSource() any {
 	return n.source.Interface()
 }
@@ -41,24 +42,47 @@ func NewObject(source any) *Object {
 	return n
 }
 
+// Object is the module for manipulating a source object.
 type Object struct {
 	// Used by ForEach.
 	ifValueFoundInObject IfValueFoundInObject
 
-	schema     schema.Schema
+	// Useful especially with the Set method for creating new nested objects when starting with an empty source.
+	//
+	// Initialize with SetSchema or WithSchema.
+	schema schema.Schema
+
+	// Value to set in source by the Set method.
 	valueToSet any
 
+	// Made by Set and Delete.
 	noOfModifications uint64
-	lastError         error
+
+	// Last error encountered when processing the source especially for the recursive descent pattern or union pattern in path.JSONPath.
+	lastError error
 
 	// Root object to work with.
 	//
 	// Will be modified with Set and Delete.
-	source     reflect.Value
+	//
+	// Initialize with NewObject parameter, or SetSource.
+	source reflect.Value
+	// Computed when you use SetSource.
 	sourceType reflect.Type
 
 	recursiveDescentSegments path.RecursiveDescentSegments
-	defaultConverter         schema.DefaultConverter
+
+	// Default converter to use when converting data e.g., valueToSet to the destination type at the path.JSONPath.
+	//
+	// Initialize with WithDefaultConverter or SetDefaultConverter.
+	defaultConverter schema.DefaultConverter
 }
 
+// IfValueFoundInObject is called when value is found at path.JSONPath.
+//
+// Parameters:
+//   - jsonPath - Current jsonPath where value was found.
+//   - value - value found.
+//
+// Return `true` to terminate ForEach loop.
 type IfValueFoundInObject func(jsonPath path.RecursiveDescentSegment, value any) bool

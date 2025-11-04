@@ -631,14 +631,22 @@ func (n *Conversion) RecursiveConvert(source reflect.Value, schema Schema, pathS
 	}
 }
 
-func (n *Conversion) Convert(data any, schema Schema, destination any) error {
+// Convert
+//
+// Parameters:
+//   - source - Data to convert.
+//   - schema - Schema to use for conversion.
+//   - destination - Typed pointer to location to store converted result. Will set result using reflect if type matches.
+//
+// Returns error if conversion fails.
+func (n *Conversion) Convert(source any, schema Schema, destination any) error {
 	const FunctionName = "Convert"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(ErrDataConversionFailed, FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data)
+		return NewError(ErrDataConversionFailed, FunctionName, "destination is not a pointer").WithSchema(schema).WithData(source)
 	}
 
-	if result, err := n.RecursiveConvert(reflect.ValueOf(data), schema, path.RecursiveDescentSegment{
+	if result, err := n.RecursiveConvert(reflect.ValueOf(source), schema, path.RecursiveDescentSegment{
 		{
 			Key:       "$",
 			IsKeyRoot: true,
@@ -648,7 +656,7 @@ func (n *Conversion) Convert(data any, schema Schema, destination any) error {
 	} else {
 		dest := reflect.ValueOf(destination)
 		if result.Type() != reflect.TypeOf(destination) && reflect.TypeOf(destination).Elem().Kind() != reflect.Interface {
-			return NewError(ErrDataConversionFailed, FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data)
+			return NewError(ErrDataConversionFailed, FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(source)
 		}
 		dest.Elem().Set(result)
 	}

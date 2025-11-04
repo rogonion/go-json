@@ -10,6 +10,15 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
+// Set updates or creates new value(s) in `Object.source`.
+//
+// If `Object.schema` is supplied, it gives the function the ability to create user defined collections such as structs at different nesting levels.
+// Therefore, the `Object.source` can be instantiated as a value of type any with nil and end up being an array of nested structs.
+//
+// Parameters:
+//   - jsonPath
+//
+// Returns the number of modifications made through setting and the last error encountered.
 func (n *Object) Set(jsonPath path.JSONPath, value any) (uint64, error) {
 	const FunctionName = "Set"
 

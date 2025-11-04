@@ -10,15 +10,18 @@ import (
 // Ensure that the path is a valid JSON Path.
 //
 // Splitting is done as follows:
-//   - Breakdown path using recursive descent pattern.
-//   - For each recursive descent pattern, breakdown using dot notation pattern followed by bracket notation pattern.
 //
-// Parameters:
-//   - path - Path to data.
+//  1. SplitPathByRecursiveDescentPattern - Breakdown path using recursive descent pattern.
+//
+//  2. For each recursive descent pattern:
+//
+//     a. SplitPathSegmentByDotNotationPattern - Breakdown using dot notation pattern
+//
+//     b. ExtractCollectionMemberSegments - Breakdown using bracket notation pattern.
 //
 // Returns:
 //
-//   - Slice of Recursive Descent Path(s) to data.
+//   - 2D Slice of Recursive Descent Path(s) to data.
 //
 //     Top level slices represents recursive descent path.
 func (jsonPath JSONPath) Parse() RecursiveDescentSegments {

@@ -10,6 +10,14 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
+// Get retrieves value(s) in `Object.source` at jsonPath.
+//
+// For JSONPath syntax patterns like the recursive descent pattern, wildcard, or union selector e.g., `$..One`, `$.One[*]`, `$.['One','Two','Three']`, expect a slice of type any which contains the values found.
+//
+// Parameters:
+//   - jsonPath
+//
+// Returns the value(s) found, true if retrieval was successful, and an error in case retrieval was not successful.
 func (n *Object) Get(jsonPath path.JSONPath) (any, bool, error) {
 	if string(jsonPath) == path.JsonpathKeyRoot || jsonPath == "" {
 		return n.source.Interface(), true, nil

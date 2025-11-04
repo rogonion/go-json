@@ -11,6 +11,12 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
+// Delete removes value(s) in `Object.source`.
+//
+// Parameters:
+//   - jsonPath - path to data to remove.
+//
+// Returns the number of modifications made through deletion and the last error encountered.
 func (n *Object) Delete(jsonPath path.JSONPath) (uint64, error) {
 	const FunctionName = "Delete"
 

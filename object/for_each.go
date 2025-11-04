@@ -9,6 +9,17 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
+// ForEach loops through `Object.source` using jsonPath as the guide.
+//
+// Useful for the following JSONPath syntax:
+//   - Recursive descent e.g, `$...One`
+//   - Wildcard e.g., `$.One[*]`
+//   - Union selector e.g., `$.['One','Two','Three']`
+//   - Array selector e.g., `$.[1:6:2]`
+//
+// Parameters:
+//   - jsonPath
+//   - ifValueFoundInObject - Called when each value is found
 func (n *Object) ForEach(jsonPath path.JSONPath, ifValueFoundInObject IfValueFoundInObject) {
 	n.recursiveDescentSegments = jsonPath.Parse()
 	n.ifValueFoundInObject = ifValueFoundInObject

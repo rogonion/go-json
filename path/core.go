@@ -11,7 +11,7 @@ type JSONPath string
 // RecursiveDescentSegments alias that represents the final deconstructed JSONPath string using JSONPath.Parse.
 type RecursiveDescentSegments []RecursiveDescentSegment
 
-// RecursiveDescentSegment alias that represents a sequence of recursive descent segments.
+// RecursiveDescentSegment alias that represents a single sequence of recursive descent segments.
 type RecursiveDescentSegment []*CollectionMemberSegment
 
 // LinearCollectionSelector For Path linear collections (slices and arrays) selector in JSON Path like this: [start:end:step]
