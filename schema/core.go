@@ -232,21 +232,6 @@ type Error struct {
 	Data         interface{}
 }
 
-func NewError(error error, functionName string, message string, schema Schema, data interface{}, pathSegments path.RecursiveDescentSegment) *Error {
-	n := new(Error)
-	if error != nil {
-		n.Err = fmt.Errorf("%w: %w", ErrSchemaProcessorError, error)
-	} else {
-		n.Err = ErrSchemaProcessorError
-	}
-	n.FunctionName = functionName
-	n.Message = message
-	n.Schema = schema
-	n.Data = data
-	n.PathSegments = pathSegments
-	return n
-}
-
 func (e *Error) Error() string {
 	var err error
 	if e.Message != "" {
@@ -276,4 +261,31 @@ func (e *Error) String() string {
 		str = str + fmt.Sprintf(" \nData: %+v", internal.JsonStringifyMust(e.Data))
 	}
 	return str
+}
+
+func (e *Error) WithPathSegments(value path.RecursiveDescentSegment) *Error {
+	e.PathSegments = value
+	return e
+}
+
+func (e *Error) WithData(value interface{}) *Error {
+	e.Data = value
+	return e
+}
+
+func (e *Error) WithSchema(value Schema) *Error {
+	e.Schema = value
+	return e
+}
+
+func NewError(error error, functionName string, message string) *Error {
+	n := new(Error)
+	if error != nil {
+		n.Err = fmt.Errorf("%w: %w", ErrSchemaProcessorError, error)
+	} else {
+		n.Err = ErrSchemaProcessorError
+	}
+	n.FunctionName = functionName
+	n.Message = message
+	return n
 }

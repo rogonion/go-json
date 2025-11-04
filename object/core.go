@@ -29,20 +29,6 @@ type Error struct {
 	Data         interface{}
 }
 
-func NewError(error error, functionName string, message string, data interface{}, pathSegments path.RecursiveDescentSegment) *Error {
-	n := new(Error)
-	if error != nil {
-		n.Err = fmt.Errorf("%w: %w", ErrObjectProcessorError, error)
-	} else {
-		n.Err = ErrObjectProcessorError
-	}
-	n.FunctionName = functionName
-	n.Message = message
-	n.Data = data
-	n.PathSegments = pathSegments
-	return n
-}
-
 func (e *Error) Error() string {
 	var err error
 	if e.Message != "" {
@@ -70,6 +56,28 @@ func (e *Error) String() string {
 		str = str + fmt.Sprintf(" \nData: %+v", internal.JsonStringifyMust(e.Data))
 	}
 	return str
+}
+
+func (e *Error) WithPathSegments(pathSegments path.RecursiveDescentSegment) *Error {
+	e.PathSegments = pathSegments
+	return e
+}
+
+func (e *Error) WithData(data interface{}) *Error {
+	e.Data = data
+	return e
+}
+
+func NewError(error error, functionName string, message string) *Error {
+	n := new(Error)
+	if error != nil {
+		n.Err = fmt.Errorf("%w: %w", ErrObjectProcessorError, error)
+	} else {
+		n.Err = ErrObjectProcessorError
+	}
+	n.FunctionName = functionName
+	n.Message = message
+	return n
 }
 
 func mapKeyString(mapKey reflect.Value) string {

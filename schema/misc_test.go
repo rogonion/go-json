@@ -463,16 +463,16 @@ func (n *Pgxuuid) Convert(data reflect.Value, currentSchema Schema, pathSegments
 		if uuidString, err := uuid.FromString(d); err == nil {
 			return reflect.ValueOf(uuidString), nil
 		} else {
-			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from string failed", currentSchema, data, pathSegments)
+			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from string failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
 		}
 	case []byte:
 		if uuidBytes, err := uuid.FromBytes(d); err == nil {
 			return reflect.ValueOf(uuidBytes), nil
 		} else {
-			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from bytes failed", currentSchema, data, pathSegments)
+			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from bytes failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
 		}
 	default:
-		return reflect.Value{}, NewError(nil, FunctionName, fmt.Sprintf("unsupported type %T", data), currentSchema, data, pathSegments)
+		return reflect.Value{}, NewError(nil, FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
 	}
 }
 
@@ -482,20 +482,20 @@ func (n *Pgxuuid) ValidateData(data any, currentSchema Schema, pathSegments path
 	switch d := data.(type) {
 	case uuid.UUID:
 		if d.IsNil() {
-			return false, NewError(nil, FunctionName, "uuid is nil", currentSchema, data, pathSegments)
+			return false, NewError(nil, FunctionName, "uuid is nil").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
 		}
 		return true, nil
 	case string:
 		if _, err := uuid.FromString(d); err != nil {
-			return false, NewError(err, FunctionName, "string not valid uuid", currentSchema, data, pathSegments)
+			return false, NewError(err, FunctionName, "string not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
 		}
 		return true, nil
 	case []byte:
 		if _, err := uuid.FromBytes(d); err != nil {
-			return false, NewError(err, FunctionName, "[]bytes not valid uuid", currentSchema, data, pathSegments)
+			return false, NewError(err, FunctionName, "[]bytes not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
 		}
 		return true, nil
 	default:
-		return false, NewError(nil, FunctionName, fmt.Sprintf("unsupported type %T", data), currentSchema, data, pathSegments)
+		return false, NewError(nil, FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
 	}
 }

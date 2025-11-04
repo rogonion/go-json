@@ -14,7 +14,7 @@ func (n *Deserialization) deserializeWithDynamicSchemaNode(source reflect.Value,
 
 	if internal.IsNilOrInvalid(source) {
 		if !schema.Nilable {
-			return reflect.Value{}, NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, "source cannot be nil", schema, source.Interface(), pathSegments)
+			return reflect.Value{}, NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, "source cannot be nil").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
 		}
 		return reflect.ValueOf(schema.DefaultValue), nil
 	}
@@ -47,7 +47,7 @@ func (n *Deserialization) deserializeWithDynamicSchema(source reflect.Value, sch
 	}
 
 	if len(schema.Nodes) == 0 {
-		return reflect.Value{}, NewError(ErrDataDeserializationFailed, FunctionName, "no schema nodes found", schema, source, pathSegments)
+		return reflect.Value{}, NewError(ErrDataDeserializationFailed, FunctionName, "no schema nodes found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
 	}
 
 	var lastSchemaNodeErr error
@@ -75,7 +75,7 @@ func (n *Deserialization) deserialize(source reflect.Value, schema Schema, pathS
 	case *DynamicSchemaNode:
 		return n.deserializeWithDynamicSchemaNode(source, s, pathSegments)
 	default:
-		return reflect.Value{}, NewError(ErrDataDeserializationFailed, FunctionName, "unsupported schema type", schema, source, pathSegments)
+		return reflect.Value{}, NewError(ErrDataDeserializationFailed, FunctionName, "unsupported schema type").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
 	}
 }
 
@@ -93,12 +93,12 @@ func (n *Deserialization) deserializeDeserializedData(deserializedData any, data
 		dest := reflect.ValueOf(destination)
 		if result.Kind() != reflect.Pointer {
 			if result.Type() != reflect.TypeOf(destination) && reflect.TypeOf(destination).Elem().Kind() != reflect.Interface {
-				return NewError(ErrDataDeserializationFailed, FunctionName, "destination and result type mismatch", schema, data, nil)
+				return NewError(ErrDataDeserializationFailed, FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data)
 			}
 			dest.Elem().Set(result)
 		} else {
 			if result.Elem().Type() != reflect.ValueOf(destination).Elem().Type() {
-				return NewError(ErrDataDeserializationFailed, FunctionName, "destination and result type mismatch", schema, data, nil)
+				return NewError(ErrDataDeserializationFailed, FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data)
 			}
 			dest.Elem().Set(result.Elem())
 		}
@@ -111,12 +111,12 @@ func (n *Deserialization) FromYAML(data []byte, schema Schema, destination any) 
 	const FunctionName = "FromYAML"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(ErrDataDeserializationFailed, FunctionName, "destination is not a pointer", schema, data, nil)
+		return NewError(ErrDataDeserializationFailed, FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data)
 	}
 
 	var deserializedData interface{}
 	if err := yaml.Unmarshal(data, &deserializedData); err != nil {
-		return NewError(err, FunctionName, "Unmarshal from Yaml failed", schema, data, nil)
+		return NewError(err, FunctionName, "Unmarshal from Yaml failed").WithSchema(schema).WithData(data)
 	}
 
 	return n.deserializeDeserializedData(deserializedData, string(data), schema, destination)
@@ -126,12 +126,12 @@ func (n *Deserialization) FromJSON(data []byte, schema Schema, destination any) 
 	const FunctionName = "FromJSON"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(ErrDataDeserializationFailed, FunctionName, "destination is not a pointer", schema, data, nil)
+		return NewError(ErrDataDeserializationFailed, FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data)
 	}
 
 	var deserializedData interface{}
 	if err := json.Unmarshal(data, &deserializedData); err != nil {
-		return NewError(err, FunctionName, "Unmarshal from JSON failed", schema, data, nil)
+		return NewError(err, FunctionName, "Unmarshal from JSON failed").WithSchema(schema).WithData(data)
 	}
 
 	return n.deserializeDeserializedData(deserializedData, string(data), schema, destination)
