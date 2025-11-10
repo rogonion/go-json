@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
 )
@@ -36,8 +37,8 @@ func TestObject_Delete(t *testing.T) {
 			t.Error(
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
-				"res=", internal.JsonStringifyMust(obj.GetSource()), "\n",
-				"JSON testData.Expected=", internal.JsonStringifyMust(testData.ExpectedValue),
+				"res=", core.JsonStringifyMust(obj.GetSource()), "\n",
+				"JSON testData.Expected=", core.JsonStringifyMust(testData.ExpectedValue),
 			)
 		}
 	}

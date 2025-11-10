@@ -3,7 +3,7 @@ package object
 import (
 	"reflect"
 
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/schema"
 )
 
@@ -36,7 +36,7 @@ func AddressSchema() *schema.DynamicSchemaNode {
 	return &schema.DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(Address{}),
-		ChildNodes: map[string]schema.Schema{
+		ChildNodes: schema.ChildNodes{
 			"Street": &schema.DynamicSchemaNode{
 				Kind: reflect.String,
 				Type: reflect.TypeOf(""),
@@ -47,7 +47,7 @@ func AddressSchema() *schema.DynamicSchemaNode {
 			},
 			"ZipCode": &schema.DynamicSchemaNode{
 				Kind: reflect.Pointer,
-				Type: reflect.TypeOf(internal.Ptr("")),
+				Type: reflect.TypeOf(core.Ptr("")),
 				ChildNodesPointerSchema: &schema.DynamicSchemaNode{
 					Kind: reflect.String,
 					Type: reflect.TypeOf(""),
@@ -67,7 +67,7 @@ func UserProfileSchema() *schema.DynamicSchemaNode {
 	return &schema.DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(UserProfile{}),
-		ChildNodes: map[string]schema.Schema{
+		ChildNodes: schema.ChildNodes{
 			"Name": &schema.DynamicSchemaNode{
 				Kind: reflect.String,
 				Type: reflect.TypeOf(""),

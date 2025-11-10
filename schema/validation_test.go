@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid/v5"
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 )
 
@@ -16,7 +17,7 @@ func TestSchema_ValidateData(t *testing.T) {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
 				"schema=", testData.Schema, "\n",
-				"data=", internal.JsonStringifyMust(testData.Data), "\n",
+				"data=", core.JsonStringifyMust(testData.Data), "\n",
 			)
 			var schemaError *Error
 			if errors.As(err, &schemaError) {
@@ -303,7 +304,7 @@ func validationDataTestData(yield func(data *validationData) bool) {
 				},
 			},
 			Validators: Validators{
-				reflect.TypeOf(uuid.UUID{}): internal.Ptr(Pgxuuid{}),
+				reflect.TypeOf(uuid.UUID{}): core.Ptr(Pgxuuid{}),
 			},
 			ExpectedOk: true,
 		},

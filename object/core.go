@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/path"
 )
 
 var (
-	// ErrObjectProcessorError is the base error for object processing.
-	ErrObjectProcessorError = errors.New("object processing failed")
+	// ErrObjectError is the default error.
+	ErrObjectError = errors.New("object processing failed")
 
 	//ErrPathSegmentInvalidError for when a path segment is not found or not expected.
 	ErrPathSegmentInvalidError = errors.New("path segment invalid")
@@ -20,7 +20,9 @@ var (
 	ErrValueAtPathSegmentInvalidError = errors.New("value at path segment invalid")
 )
 
-// Error for when object processing fails.
+/*
+Error for when object processing fails.
+*/
 type Error struct {
 	Err          error
 	FunctionName string
@@ -37,7 +39,6 @@ func (e *Error) Error() string {
 	return fmt.Errorf("%w: %w", err, e.Err).Error()
 }
 
-// Unwrap allows for error chaining with errors.Is and errors.As.
 func (e *Error) Unwrap() error {
 	return e.Err
 }
@@ -53,7 +54,7 @@ func (e *Error) String() string {
 	}
 
 	if e.Data != nil {
-		str = str + fmt.Sprintf(" \nData: %+v", internal.JsonStringifyMust(e.Data))
+		str = str + fmt.Sprintf(" \nData: %+v", core.JsonStringifyMust(e.Data))
 	}
 	return str
 }
@@ -68,13 +69,14 @@ func (e *Error) WithData(data interface{}) *Error {
 	return e
 }
 
-func NewError(error error, functionName string, message string) *Error {
+func (e *Error) WithNestedError(value error) *Error {
+	e.Err = fmt.Errorf("%w: %w", ErrObjectError, value)
+	return e
+}
+
+func NewError(functionName string, message string) *Error {
 	n := new(Error)
-	if error != nil {
-		n.Err = fmt.Errorf("%w: %w", ErrObjectProcessorError, error)
-	} else {
-		n.Err = ErrObjectProcessorError
-	}
+	n.Err = ErrObjectError
 	n.FunctionName = functionName
 	n.Message = message
 	return n
@@ -84,5 +86,5 @@ func mapKeyString(mapKey reflect.Value) string {
 	if mapKey.Kind() == reflect.String {
 		return mapKey.String()
 	}
-	return fmt.Sprintf("%v", internal.JsonStringifyMust(mapKey.Interface()))
+	return fmt.Sprintf("%v", core.JsonStringifyMust(mapKey.Interface()))
 }

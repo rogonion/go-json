@@ -6,18 +6,22 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/path"
 )
 
-// SchemaPath represents a JSONPath both in its parsed and unparsed form.
-//
-// Ideally functions are expected to only work with a JSONPath with no recursive descent searches.
+/*
+SchemaPath represents a JSONPath both in its parsed and unparsed form.
+
+Ideally functions are expected to only work with a JSONPath with no recursive descent searches.
+*/
 type SchemaPath interface {
 	path.JSONPath | path.RecursiveDescentSegment | path.RecursiveDescentSegments
 }
 
-// Deserializer For performing deserialization of data from various source formats to a destination that adheres to the Schema.
+/*
+Deserializer For performing deserialization of data from various source formats to a destination that adheres to the Schema.
+*/
 type Deserializer interface {
 	// FromJSON Deserializes JSON string into destination using Schema.
 	//
@@ -38,9 +42,11 @@ type DefaultConverter interface {
 	Convert(data any, schema Schema, destination any) error
 }
 
-// Converter for defining custom conversion logic.
-//
-// Meant to be implemented by custom data types that need to perform specific value-based conversion beyond defaults.
+/*
+Converter for defining custom conversion logic.
+
+Meant to be implemented by custom data types that need to perform specific value-based conversion beyond defaults.
+*/
 type Converter interface {
 	// Convert converts data based on schema.
 	//
@@ -54,9 +60,11 @@ type Converter interface {
 	Convert(data reflect.Value, schema Schema, pathSegments path.RecursiveDescentSegment) (reflect.Value, error)
 }
 
-// Converters Map of custom converters.
-//
-// Intended to be used for custom conversion logic of user-defined types like structs.
+/*
+Converters Map of custom converters.
+
+Intended to be used for custom conversion logic of user-defined types like structs.
+*/
 type Converters map[reflect.Type]Converter
 
 type DefaultValidator interface {
@@ -64,9 +72,11 @@ type DefaultValidator interface {
 	ValidateData(data any, schema Schema) (bool, error)
 }
 
-// Validator for defining custom data validation logic.
-//
-// Meant to be implemented by custom data types that need to perform specific value-based validation that goes beyond the defaults.
+/*
+Validator for defining custom data validation logic.
+
+Meant to be implemented by custom data types that need to perform specific value-based validation that goes beyond the defaults.
+*/
 type Validator interface {
 	// ValidateData validates data against a SchemaManip using custom rules.
 	//
@@ -80,12 +90,16 @@ type Validator interface {
 	ValidateData(data any, schema Schema, pathSegments path.RecursiveDescentSegment) (bool, error)
 }
 
-// Validators Map of custom converters.
-//
-// Intended to be used for custom validation logic of user-defined types like structs.
+/*
+Validators Map of custom converters.
+
+Intended to be used for custom validation logic of user-defined types like structs.
+*/
 type Validators map[reflect.Type]Validator
 
-// Schema structs that represent a JSON-Like schema.
+/*
+Schema structs that represent a JSON-Like schema.
+*/
 type Schema interface {
 	// IsSchema placeholder implementor that returns `true` to indicate that they represent a JSON-Like schema.
 	IsSchema() bool
@@ -98,11 +112,13 @@ type DynamicSchema struct {
 	DefaultSchemaNodeKey string
 
 	// A map of DynamicSchemaNode, each representing a single valid schema.
-	Nodes map[string]*DynamicSchemaNode
+	Nodes DynamicSchemaNodes
 
 	// A list of valid DynamicSchemaNode keys in Nodes. Usually populated through the schema validation process.
 	ValidSchemaNodeKeys []string
 }
+
+type DynamicSchemaNodes map[string]*DynamicSchemaNode
 
 func (d *DynamicSchema) IsSchema() bool {
 	return true
@@ -130,9 +146,11 @@ func NewDynamicSchema() *DynamicSchema {
 
 type ChildNodes map[string]Schema
 
-// DynamicSchemaNode defines a single specific schema node within a DynamicSchema.
-//
-// Useful when recursively setting data in a nested data structure during the creation of new nesting structure by discovering the exact type to use at each path.CollectionMemberSegment in a Path.
+/*
+DynamicSchemaNode defines a single specific schema node within a DynamicSchema.
+
+Useful when recursively setting data in a nested data structure during the creation of new nesting structure by discovering the exact type to use at each path.CollectionMemberSegment in a Path.
+*/
 type DynamicSchemaNode struct {
 	// The full type of the data.
 	Type reflect.Type
@@ -206,8 +224,8 @@ func NewDynamicSchemaNode() *DynamicSchemaNode {
 }
 
 var (
-	// ErrSchemaProcessorError is the base error for DataProcessor interface.
-	ErrSchemaProcessorError = errors.New("schema processing encountered an error")
+	// ErrSchemaError is the default error.
+	ErrSchemaError = errors.New("schema processing encountered an error")
 
 	// ErrSchemaPathError is the base error for GetSchemaAtPath.
 	ErrSchemaPathError = errors.New("schema path error")
@@ -222,7 +240,9 @@ var (
 	ErrDataConversionFailed = errors.New("data conversion failed")
 )
 
-// Error for when DataProcessor execution fails.
+/*
+Error for when DataProcessor execution fails.
+*/
 type Error struct {
 	Err          error
 	FunctionName string
@@ -240,7 +260,6 @@ func (e *Error) Error() string {
 	return fmt.Errorf("%w: %w", err, e.Err).Error()
 }
 
-// Unwrap allows for error chaining with errors.Is and errors.As.
 func (e *Error) Unwrap() error {
 	return e.Err
 }
@@ -258,7 +277,7 @@ func (e *Error) String() string {
 		str = str + " \nSchema: " + e.Schema.String()
 	}
 	if e.Data != nil {
-		str = str + fmt.Sprintf(" \nData: %+v", internal.JsonStringifyMust(e.Data))
+		str = str + fmt.Sprintf(" \nData: %+v", core.JsonStringifyMust(e.Data))
 	}
 	return str
 }
@@ -278,13 +297,14 @@ func (e *Error) WithSchema(value Schema) *Error {
 	return e
 }
 
-func NewError(error error, functionName string, message string) *Error {
+func (e *Error) WithNestedError(value error) *Error {
+	e.Err = fmt.Errorf("%w: %w", ErrSchemaError, value)
+	return e
+}
+
+func NewError(functionName string, message string) *Error {
 	n := new(Error)
-	if error != nil {
-		n.Err = fmt.Errorf("%w: %w", ErrSchemaProcessorError, error)
-	} else {
-		n.Err = ErrSchemaProcessorError
-	}
+	n.Err = ErrSchemaError
 	n.FunctionName = functionName
 	n.Message = message
 	return n

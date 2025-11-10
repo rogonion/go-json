@@ -3,12 +3,14 @@ package object
 import (
 	"reflect"
 
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 )
 
-// Equal Define custom equal check logic.
-//
-// Meant to be implemented by custom data types that need to perform specific value-based equality checks beyond defaults.
+/*
+Equal Define custom equal check logic.
+
+Meant to be implemented by custom data types that need to perform specific value-based equality checks beyond defaults.
+*/
 type Equal interface {
 	// AreEqual Checks if left and right are equal
 	//
@@ -20,25 +22,29 @@ type Equal interface {
 	AreEqual(left reflect.Value, right reflect.Value) bool
 }
 
-// AreEquals Map of custom equal checkers.
-//
-// Intended to be used for custom equality check logic of user-defined types like structs.
+/*
+AreEquals Map of custom equal checkers.
+
+Intended to be used for custom equality check logic of user-defined types like structs.
+*/
 type AreEquals map[reflect.Type]Equal
 
-// AreEqual Recursively checks if left and right are equal
-//
-// Actively checks if elements of  slices, arrays, maps, and/or structs are equal and defaults to reflect.DeepEqual for the remaining checks.
-//
-//	May only panic if reflect functions panic though measures have been set to ensure they are called appropriately.
-//
-// Parameters:
-//   - left - Value to check.
-//   - right - Value to check.
-//
-// Returns true if left and right are equal.
+/*
+AreEqual Recursively checks if left and right are equal
+
+Actively checks if elements of  slices, arrays, maps, and/or structs are equal and defaults to reflect.DeepEqual for the remaining checks.
+
+May only panic if reflect functions panic though measures have been set to ensure they are called appropriately.
+
+Parameters:
+  - left - Value to check.
+  - right - Value to check.
+
+Returns `true` if left and right are equal.
+*/
 func (n *AreEqual) AreEqual(left reflect.Value, right reflect.Value) bool {
-	leftNilOrInvalid := internal.IsNilOrInvalid(left)
-	rightNilOrInvalid := internal.IsNilOrInvalid(right)
+	leftNilOrInvalid := core.IsNilOrInvalid(left)
+	rightNilOrInvalid := core.IsNilOrInvalid(right)
 
 	if (!leftNilOrInvalid && rightNilOrInvalid) || (!rightNilOrInvalid && leftNilOrInvalid) {
 		return false
@@ -125,6 +131,12 @@ func NewAreEqual() *AreEqual {
 	return n
 }
 
+/*
+AreEqual checks if two values are equal.
+*/
 type AreEqual struct {
+	// Pass custom equality check logic.
+	//
+	// Useful for user defined types like structs.
 	customEquals AreEquals
 }

@@ -5,25 +5,30 @@ import (
 	"strings"
 )
 
-// Parse Extracts path member segment from path that adheres to JSON Path syntax
-//
-// Ensure that the path is a valid JSON Path.
-//
-// Splitting is done as follows:
-//
-//  1. SplitPathByRecursiveDescentPattern - Breakdown path using recursive descent pattern.
-//
-//  2. For each recursive descent pattern:
-//
-//     a. SplitPathSegmentByDotNotationPattern - Breakdown using dot notation pattern
-//
-//     b. ExtractCollectionMemberSegments - Breakdown using bracket notation pattern.
-//
-// Returns:
-//
-//   - 2D Slice of Recursive Descent Path(s) to data.
-//
-//     Top level slices represents recursive descent path.
+/*
+Parse Extracts path member segment from path that adheres to JSON Path syntax
+
+Ensure that the path is a valid JSON Path.
+
+Splitting is done as follows:
+
+ 1. SplitPathByRecursiveDescentPattern - Breakdown path using recursive descent pattern.
+
+ 2. For each recursive descent pattern:
+
+    a. SplitPathSegmentByDotNotationPattern - Breakdown using dot notation pattern
+
+    b. ExtractCollectionMemberSegments - Breakdown using bracket notation pattern.
+
+Returns:
+
+  - 2D Slice of Recursive Descent Path(s) to data. Top level slices represents recursive descent path.
+
+Example:
+
+	var jsonPath JSONPath = "$[1,3,5]"
+	var parsedPath RecursiveDescentSegments = jsonPath.Parse()
+*/
 func (jsonPath JSONPath) Parse() RecursiveDescentSegments {
 	recursiveDescentSegments := jsonPath.SplitPathByRecursiveDescentPattern()
 

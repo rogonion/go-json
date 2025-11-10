@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
 )
@@ -113,7 +114,7 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 			ExpectedOk: true,
 			ExpectedData: &DynamicSchemaNode{
 				Kind: reflect.Pointer,
-				Type: reflect.TypeOf(internal.Ptr("")),
+				Type: reflect.TypeOf(core.Ptr("")),
 				ChildNodesPointerSchema: &DynamicSchemaNode{
 					Kind: reflect.String,
 					Type: reflect.TypeOf(""),

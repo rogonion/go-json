@@ -14,7 +14,7 @@ func (n *Conversion) convertToBoolWithDynamicSchemaNode(source reflect.Value, sc
 	const FunctionName = "convertToBoolWithDynamicSchemaNode"
 
 	if schema.Kind != reflect.Bool {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind is not bool").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind is not bool").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -26,10 +26,10 @@ func (n *Conversion) convertToBoolWithDynamicSchemaNode(source reflect.Value, sc
 		if convertedInt, err := n.convertToIntWithDynamicSchemaNode(source, &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)}, pathSegments); err == nil {
 			return reflect.ValueOf(convertedInt.Int() != 0), nil
 		} else {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "RecursiveConvert number to int for boolean conversion failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "RecursiveConvert number to int for boolean conversion failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported source.Kind for bool conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported source.Kind for bool conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -37,7 +37,7 @@ func (n *Conversion) convertToStringWithDynamicSchemaNode(source reflect.Value, 
 	const FunctionName = "convertToStringWithDynamicSchemaNode"
 
 	if schema.Kind != reflect.String {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind is not string").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind is not string").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -61,7 +61,7 @@ func (n *Conversion) convertToStringWithDynamicSchemaNode(source reflect.Value, 
 		if jsonString, err := json.Marshal(ptrToSource); err == nil {
 			return reflect.ValueOf(string(jsonString)), nil
 		} else {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "RecursiveConvert source to json string failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "RecursiveConvert source to json string failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 	}
 }
@@ -70,7 +70,7 @@ func (n *Conversion) convertToFloatWithDynamicSchemaNode(source reflect.Value, s
 	const FunctionName = "convertToFloatWithDynamicSchemaNode"
 
 	if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64}, schema.Kind) {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind is not float or variant").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind is not float or variant").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -84,10 +84,10 @@ func (n *Conversion) convertToFloatWithDynamicSchemaNode(source reflect.Value, s
 		if i, err := strconv.ParseFloat(source.String(), 64); err == nil {
 			return reflect.ValueOf(i).Convert(schema.Type), nil
 		} else {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "RecursiveConvert source string to float failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "RecursiveConvert source string to float failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported source.Kind for float conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported source.Kind for float conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -95,7 +95,7 @@ func (n *Conversion) convertToUintWithDynamicSchemaNode(source reflect.Value, sc
 	const FunctionName = "convertToUintWithDynamicSchemaNode"
 
 	if !slices.Contains([]reflect.Kind{reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64}, schema.Kind) {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind is not uint or variant").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind is not uint or variant").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -109,10 +109,10 @@ func (n *Conversion) convertToUintWithDynamicSchemaNode(source reflect.Value, sc
 		if i, err := strconv.ParseUint(source.String(), 10, 64); err == nil {
 			return reflect.ValueOf(i).Convert(schema.Type), nil
 		} else {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "RecursiveConvert source string to uint failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "RecursiveConvert source string to uint failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported source.Kind for uint conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported source.Kind for uint conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -120,7 +120,7 @@ func (n *Conversion) convertToIntWithDynamicSchemaNode(source reflect.Value, sch
 	const FunctionName = "convertToIntWithDynamicSchemaNode"
 
 	if !slices.Contains([]reflect.Kind{reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64}, schema.Kind) {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind is not int or variant").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind is not int or variant").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -134,10 +134,10 @@ func (n *Conversion) convertToIntWithDynamicSchemaNode(source reflect.Value, sch
 		if i, err := strconv.ParseInt(source.String(), 10, 64); err == nil {
 			return reflect.ValueOf(i).Convert(schema.Type), nil
 		} else {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "RecursiveConvert source string to int failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "RecursiveConvert source string to int failed").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported source.Kind for int conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported source.Kind for int conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -145,7 +145,7 @@ func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, 
 	const FunctionName = "convertToStructWithDynamicSchemaNode"
 
 	if schema.Kind != reflect.Struct {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind is not struct").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind is not struct").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -163,7 +163,7 @@ func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, 
 
 			childSchema, ok := schema.ChildNodes[destField.Name]
 			if !ok {
-				return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("schema for field %s has not been found for struct conversion", destField.Name)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+				return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("schema for field %s has not been found for struct conversion", destField.Name)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 			}
 
 			currentPathSegments := append(pathSegments, &path.CollectionMemberSegment{Key: destField.Name, IsKey: true})
@@ -174,7 +174,7 @@ func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, 
 					continue
 				} else {
 					if !schema.Nilable {
-						return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert value for struct field %s failed", destField.Name)).WithSchema(schema).WithData(sourceField.Interface()).WithPathSegments(currentPathSegments)
+						return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert value for struct field %s failed", destField.Name)).WithSchema(schema).WithData(sourceField.Interface()).WithPathSegments(currentPathSegments).WithNestedError(err)
 					}
 				}
 			}
@@ -193,18 +193,18 @@ func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, 
 		for iter.Next() {
 			key, val := iter.Key(), iter.Value()
 			if key.Kind() != reflect.String {
-				return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("map key %s is not string for struct conversion", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+				return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("map key %s is not string for struct conversion", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 			}
 
 			// Find the corresponding field in the destination struct.
 			field := newStruct.FieldByName(key.String())
 			if !field.IsValid() || !field.CanSet() {
-				return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("map key %s is not a valid field in struct conversion", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+				return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("map key %s is not a valid field in struct conversion", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 			}
 
 			childSchema, ok := schema.ChildNodes[key.String()]
 			if !ok {
-				return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("schema for field %s has not been found for struct conversion", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+				return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("schema for field %s has not been found for struct conversion", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 			}
 
 			currentPathSegments := append(pathSegments, &path.CollectionMemberSegment{Key: key.String(), IsKey: true})
@@ -214,7 +214,7 @@ func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, 
 				continue
 			} else {
 				if !schema.Nilable {
-					return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert value for struct field %s failed", key)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(pathSegments)
+					return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert value for struct field %s failed", key)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 				}
 			}
 		}
@@ -225,11 +225,11 @@ func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, 
 		var deserializedData interface{}
 		err := json.Unmarshal([]byte(source.String()), &deserializedData)
 		if err != nil {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "failed to RecursiveConvert string to struct using json").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "failed to RecursiveConvert string to struct using json").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 		return n.convertToStructWithDynamicSchemaNode(reflect.ValueOf(deserializedData), schema, pathSegments)
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported source.Kind for struct conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported source.Kind for struct conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -237,7 +237,7 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 	const FunctionName = "convertToMapWithDynamicSchemaNode"
 
 	if schema.Kind != reflect.Map {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind is not map").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind is not map").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -254,7 +254,7 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 			key, val := iter.Key(), iter.Value()
 			keyString, err := n.convertToStringWithDynamicSchemaNode(key, &DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")}, pathSegments)
 			if err != nil {
-				return reflect.Zero(schema.Type), NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, fmt.Sprintf("could not RecursiveConvert key key %v to string", key.Interface())).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+				return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("could not RecursiveConvert key key %v to string", key.Interface())).WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 			}
 			currentPathSegments := append(pathSegments, &path.CollectionMemberSegment{Key: keyString.String(), IsKey: true})
 
@@ -274,10 +274,10 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 							}
 						}
 						if len(cs.ValidSchemaNodeKeys) == 0 {
-							return reflect.Zero(schema.Type), NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, fmt.Sprintf("map entry with key %s not valid against any DynamicSchema nodes", key)).WithSchema(cs).WithPathSegments(currentPathSegments)
+							return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("map entry with key %s not valid against any DynamicSchema nodes", key)).WithSchema(cs).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 						}
 					} else {
-						return reflect.Zero(schema.Type), NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, fmt.Sprintf("no DynamicSchema nodes found for key %s", key)).WithSchema(cs).WithPathSegments(currentPathSegments)
+						return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("no DynamicSchema nodes found for key %s", key)).WithSchema(cs).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 					}
 				case *DynamicSchemaNode:
 					if convertedKey, err := n.RecursiveConvert(key, cs.AssociativeCollectionEntryKeySchema, currentPathSegments); err == nil {
@@ -287,23 +287,23 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 								continue
 							} else {
 								if !schema.Nilable {
-									return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("converted map entry for key %s not valid", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+									return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("converted map entry for key %s not valid", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataConversionFailed)
 								}
 							}
 						} else {
 							if !schema.Nilable {
-								return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert value for map key %s failed", key)).WithSchema(schema).WithData(val.Interface()).WithPathSegments(currentPathSegments)
+								return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert value for map key %s failed", key)).WithSchema(schema).WithData(val.Interface()).WithPathSegments(currentPathSegments).WithNestedError(err)
 							}
 							continue
 						}
 					} else {
 						if !schema.Nilable {
-							return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert key for map key %s failed", key)).WithSchema(schema).WithPathSegments(currentPathSegments)
+							return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert key for map key %s failed", key)).WithSchema(schema).WithPathSegments(currentPathSegments).WithNestedError(err)
 						}
 						continue
 					}
 				default:
-					return reflect.Zero(schema.Type), NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, fmt.Sprintf("Nodes in Schema for map key %s empty", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+					return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("Nodes in Schema for map key %s empty", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 				}
 			}
 
@@ -315,24 +315,24 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 							continue
 						} else {
 							if !schema.Nilable {
-								return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("converted map entry for key %s not valid", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+								return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("converted map entry for key %s not valid", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataConversionFailed)
 							}
 						}
 					} else {
 						if !schema.Nilable {
-							return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert value for map key %s failed", key)).WithSchema(schema).WithData(val.Interface()).WithPathSegments(currentPathSegments)
+							return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert value for map key %s failed", key)).WithSchema(schema).WithData(val.Interface()).WithPathSegments(currentPathSegments).WithNestedError(err)
 						}
 						continue
 					}
 				} else {
 					if !schema.Nilable {
-						return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert key for map key %s failed", key)).WithSchema(schema).WithPathSegments(currentPathSegments)
+						return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert key for map key %s failed", key)).WithSchema(schema).WithPathSegments(currentPathSegments).WithNestedError(err)
 					}
 					continue
 				}
 			}
 
-			return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("Schema for map key %s not found", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("Schema for map key %s not found", key)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataConversionFailed)
 		}
 
 		return newMap, nil
@@ -365,11 +365,11 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 							}
 						}
 						if len(cs.ValidSchemaNodeKeys) == 0 {
-							return reflect.Zero(schema.Type), NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, fmt.Sprintf("failed to RecursiveConvert struct field with name %s against any DynamicSchema nodes", fieldName)).WithSchema(schema).WithPathSegments(currentPathSegments)
+							return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("failed to RecursiveConvert struct field with name %s against any DynamicSchema nodes", fieldName)).WithSchema(schema).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 						}
 						continue
 					} else {
-						return reflect.Zero(schema.Type), NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, fmt.Sprintf("no DynamicSchema nodes found for struct field with name %s", fieldName)).WithSchema(schema).WithPathSegments(currentPathSegments)
+						return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("no DynamicSchema nodes found for struct field with name %s", fieldName)).WithSchema(schema).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 					}
 				case *DynamicSchemaNode:
 					if convertedKey, err := n.RecursiveConvert(reflect.ValueOf(fieldName), cs.AssociativeCollectionEntryKeySchema, currentPathSegments); err == nil {
@@ -379,23 +379,23 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 								continue
 							} else {
 								if !cs.Nilable {
-									return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("converted struct field with name %s not valid", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+									return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("converted struct field with name %s not valid", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataConversionFailed)
 								}
 							}
 						} else {
 							if !cs.Nilable {
-								return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert value for struct field with name %s failed", fieldName)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(currentPathSegments)
+								return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert value for struct field with name %s failed", fieldName)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(currentPathSegments).WithNestedError(err)
 							}
 							continue
 						}
 					} else {
 						if !cs.Nilable {
-							return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert fieldName for struct field with name %s failed", fieldName)).WithSchema(schema).WithPathSegments(currentPathSegments)
+							return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert fieldName for struct field with name %s failed", fieldName)).WithSchema(schema).WithPathSegments(currentPathSegments).WithNestedError(err)
 						}
 						continue
 					}
 				default:
-					return reflect.Zero(schema.Type), NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, fmt.Sprintf("Nodes in Schema for struct field with name %s empty", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+					return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("Nodes in Schema for struct field with name %s empty", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 				}
 			}
 
@@ -407,24 +407,24 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 							continue
 						} else {
 							if !schema.Nilable {
-								return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("converted struct field with name %s not valid", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+								return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("converted struct field with name %s not valid", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataConversionFailed)
 							}
 						}
 					} else {
 						if !schema.Nilable {
-							return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert value for struct field with name %s failed", fieldName)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(currentPathSegments)
+							return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert value for struct field with name %s failed", fieldName)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(currentPathSegments).WithNestedError(err)
 						}
 						continue
 					}
 				} else {
 					if !schema.Nilable {
-						return reflect.Zero(schema.Type), NewError(err, FunctionName, fmt.Sprintf("RecursiveConvert fieldName for struct field with name %s failed", fieldName)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(currentPathSegments)
+						return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("RecursiveConvert fieldName for struct field with name %s failed", fieldName)).WithSchema(schema).WithData(field.Interface()).WithPathSegments(currentPathSegments).WithNestedError(err)
 					}
 					continue
 				}
 			}
 
-			return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, fmt.Sprintf("Schema for struct field with name %s not found", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, fmt.Sprintf("Schema for struct field with name %s not found", fieldName)).WithSchema(schema).WithData(source.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataConversionFailed)
 		}
 
 		return newMap, nil
@@ -433,11 +433,11 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 		var deserializedData interface{}
 		err := json.Unmarshal([]byte(source.String()), &deserializedData)
 		if err != nil {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "failed to RecursiveConvert string to map using json").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "failed to RecursiveConvert string to map using json").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 		return n.convertToMapWithDynamicSchemaNode(reflect.ValueOf(deserializedData), schema, pathSegments)
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported source.Kind for map conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported source.Kind for map conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -445,7 +445,7 @@ func (n *Conversion) convertToArraySliceWithDynamicSchemaNode(source reflect.Val
 	const FunctionName = "convertToArraySliceWithDynamicSchemaNode"
 
 	if schema.Kind != reflect.Slice && schema.Kind != reflect.Array {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "data.Kind is not slice or array").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "data.Kind is not slice or array").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	switch source.Kind() {
@@ -454,14 +454,14 @@ func (n *Conversion) convertToArraySliceWithDynamicSchemaNode(source reflect.Val
 		var deserializedData interface{}
 		err := json.Unmarshal([]byte(source.String()), &deserializedData)
 		if err != nil {
-			return reflect.Zero(schema.Type), NewError(err, FunctionName, "failed to RecursiveConvert string to array using json").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "failed to RecursiveConvert string to array using json").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 		return n.convertToArraySliceWithDynamicSchemaNode(reflect.ValueOf(deserializedData), schema, pathSegments)
 	case reflect.Slice, reflect.Array:
 		var newArraySlice reflect.Value
 
 		if schema.ChildNodesLinearCollectionElementsSchema == nil {
-			return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "no schema to RecursiveConvert element(s) in data (slice/array) found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Zero(schema.Type), NewError(FunctionName, "no schema to RecursiveConvert element(s) in data (slice/array) found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 		}
 
 		if schema.Kind == reflect.Slice {
@@ -489,7 +489,7 @@ func (n *Conversion) convertToArraySliceWithDynamicSchemaNode(source reflect.Val
 				if elementResult.IsValid() {
 					newArraySlice.Index(i).Set(elementResult)
 				} else {
-					return elementResult, NewError(ErrDataConversionFailed, FunctionName, "elementResult not valid").WithSchema(schema).WithData(elementResult.Interface()).WithPathSegments(pathSegments)
+					return elementResult, NewError(FunctionName, "elementResult not valid").WithSchema(schema).WithData(elementResult.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 				}
 			} else {
 				return elementResult, err
@@ -498,7 +498,7 @@ func (n *Conversion) convertToArraySliceWithDynamicSchemaNode(source reflect.Val
 
 		return newArraySlice, nil
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported source.Kind for array/slice conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported source.Kind for array/slice conversion").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -506,11 +506,11 @@ func (n *Conversion) convertToPointerWithDynamicSchemaNode(source reflect.Value,
 	const FunctionName = "convertToPointerWithDynamicSchemaNode"
 	// The destination must be a pointer type.
 	if schema.Kind != reflect.Pointer {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema.Kind not reflect.Pointer").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema.Kind not reflect.Pointer").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	if schema.ChildNodesPointerSchema == nil {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "schema for value that data (pointer) points to has not been set (schema.ChildNodesPointerSchema is nil)").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "schema for value that data (pointer) points to has not been set (schema.ChildNodesPointerSchema is nil)").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	pointerToResult, err := n.RecursiveConvert(source, schema.ChildNodesPointerSchema, pathSegments)
@@ -518,7 +518,7 @@ func (n *Conversion) convertToPointerWithDynamicSchemaNode(source reflect.Value,
 		return reflect.Zero(schema.Type), err
 	}
 	if !pointerToResult.IsValid() {
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "pointerToResult not valid").WithSchema(schema).WithData(pointerToResult.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "pointerToResult not valid").WithSchema(schema).WithData(pointerToResult.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	var newPtr reflect.Value
@@ -582,7 +582,7 @@ func (n *Conversion) convertToDynamicSchemaNode(source reflect.Value, schema *Dy
 	case reflect.Interface:
 		return source, nil
 	default:
-		return reflect.Zero(schema.Type), NewError(ErrDataConversionFailed, FunctionName, "unsupported schema.Kind").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Zero(schema.Type), NewError(FunctionName, "unsupported schema.Kind").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
@@ -599,7 +599,7 @@ func (n *Conversion) convertToDynamicSchema(source reflect.Value, schema *Dynami
 	}
 
 	if len(schema.Nodes) == 0 {
-		return reflect.Value{}, NewError(ErrDataConversionFailed, FunctionName, "no schema nodes found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Value{}, NewError(FunctionName, "no schema nodes found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 
 	var lastSchemaNodeErr error
@@ -627,23 +627,25 @@ func (n *Conversion) RecursiveConvert(source reflect.Value, schema Schema, pathS
 	case *DynamicSchemaNode:
 		return n.convertToDynamicSchemaNode(source, s, pathSegments)
 	default:
-		return reflect.Value{}, NewError(ErrDataConversionFailed, FunctionName, "unsupported schema type").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Value{}, NewError(FunctionName, "unsupported schema type").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataConversionFailed)
 	}
 }
 
-// Convert
-//
-// Parameters:
-//   - source - Data to convert.
-//   - schema - Schema to use for conversion.
-//   - destination - Typed pointer to location to store converted result. Will set result using reflect if type matches.
-//
-// Returns error if conversion fails.
+/*
+Convert
+
+Parameters:
+  - source - Data to convert.
+  - schema - Schema to use for conversion.
+  - destination - Typed pointer to location to store converted result. Will set result using reflect if type matches.
+
+Returns error if conversion fails.
+*/
 func (n *Conversion) Convert(source any, schema Schema, destination any) error {
 	const FunctionName = "Convert"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(ErrDataConversionFailed, FunctionName, "destination is not a pointer").WithSchema(schema).WithData(source)
+		return NewError(FunctionName, "destination is not a pointer").WithSchema(schema).WithData(source).WithNestedError(ErrDataConversionFailed)
 	}
 
 	if result, err := n.RecursiveConvert(reflect.ValueOf(source), schema, path.RecursiveDescentSegment{
@@ -655,8 +657,8 @@ func (n *Conversion) Convert(source any, schema Schema, destination any) error {
 		return err
 	} else {
 		dest := reflect.ValueOf(destination)
-		if result.Type() != reflect.TypeOf(destination) && reflect.TypeOf(destination).Elem().Kind() != reflect.Interface {
-			return NewError(ErrDataConversionFailed, FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(source)
+		if result.Type() != dest.Elem().Type() && dest.Elem().Kind() != reflect.Interface {
+			return NewError(FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(source).WithNestedError(ErrDataConversionFailed)
 		}
 		dest.Elem().Set(result)
 	}
@@ -677,7 +679,38 @@ func NewConversion() *Conversion {
 	return n
 }
 
-// Conversion Module for converting data against Schema
+/*
+Conversion Module for converting data against Schema.
+
+Usage:
+ 1. Instantiate using NewConversion.
+ 2. Set required parameters.
+ 3. Convert data using Conversion.Convert.
+
+Example:
+
+	schema := &DynamicSchemaNode{
+		Kind: reflect.Map,
+		Type: reflect.TypeOf(map[int]int{}),
+		ChildNodesAssociativeCollectionEntriesKeySchema: &DynamicSchemaNode{
+			Kind: reflect.Int,
+			Type: reflect.TypeOf(0),
+		},
+		ChildNodesAssociativeCollectionEntriesValueSchema: &DynamicSchemaNode{
+			Kind: reflect.Int,
+			Type: reflect.TypeOf(0),
+		},
+	}
+
+	source := map[string]string{
+		"1": "1",
+		"2": "2",
+		"3": "3",
+	}
+	var destination any
+	converter := NewConversion()
+	err := converter.Convert(source, schema, &destination)
+*/
 type Conversion struct {
 	customConverters Converters
 }

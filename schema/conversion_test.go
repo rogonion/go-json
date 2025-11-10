@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 )
 
@@ -16,11 +17,11 @@ func TestSchema_Convert(t *testing.T) {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",
 				"schema=", testData.Schema, "\n",
-				"data=", internal.JsonStringifyMust(testData.Source), "\n",
+				"data=", core.JsonStringifyMust(testData.Source), "\n",
 			)
 			var schemaError *Error
 			if errors.As(err, &schemaError) {
-				t.Error("Test Tile:", testData.TestTitle, "\n",
+				t.Error("Test Title:", testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
@@ -31,8 +32,8 @@ func TestSchema_Convert(t *testing.T) {
 				t.Error(
 					"expected res to be equal to testData.ExpectedData\n",
 					"schema=", testData.Schema, "\n",
-					"res", internal.JsonStringifyMust(res), "\n",
-					"testData.ExpectedData", internal.JsonStringifyMust(testData.ExpectedData),
+					"res", core.JsonStringifyMust(res), "\n",
+					"testData.ExpectedData", core.JsonStringifyMust(testData.ExpectedData),
 				)
 			}
 		}
@@ -301,5 +302,26 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		) {
 			return
 		}
+	}
+}
+
+func TestSchema_ConvertStoreResultInTypedDestination(t *testing.T) {
+	cvt := NewConversion()
+
+	var schema Schema = &DynamicSchemaNode{
+		Kind: reflect.Int64,
+		Type: reflect.TypeOf(int64(0)),
+	}
+	numberCast := int64(0)
+	err := cvt.Convert(0.0, schema, &numberCast)
+	if err != nil {
+		t.Fatal("Convert float64 to int64 failed", err)
+	}
+
+	schema = AddressSchema()
+	pointerToAddress := new(Address)
+	err = cvt.Convert(map[string]any{"Street": "Turnkit Boulevard", "City": "NewYork", "ZipCode": "1234"}, schema, pointerToAddress)
+	if err != nil {
+		t.Fatal("Convert Address map to struct failed", err)
 	}
 }

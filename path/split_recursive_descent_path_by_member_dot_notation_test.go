@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 )
 
 func TestPath_SplitPathSegmentByDotNotationPattern(t *testing.T) {
@@ -13,8 +13,8 @@ func TestPath_SplitPathSegmentByDotNotationPattern(t *testing.T) {
 
 		if !reflect.DeepEqual(result, testData.ExpectedSegments) {
 			t.Error(
-				"expected=", internal.JsonStringifyMust(testData.ExpectedSegments), "\n",
-				"got=", internal.JsonStringifyMust(result),
+				"expected=", core.JsonStringifyMust(testData.ExpectedSegments), "\n",
+				"got=", core.JsonStringifyMust(result),
 			)
 		}
 	}

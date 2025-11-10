@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
 	"github.com/rogonion/go-json/schema"
@@ -37,8 +38,8 @@ func TestObject_Set(t *testing.T) {
 			t.Error(
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
-				"res=", internal.JsonStringifyMust(obj.GetSource()), "\n",
-				"Expected=", internal.JsonStringifyMust(testData.ExpectedValue),
+				"res=", core.JsonStringifyMust(obj.GetSource()), "\n",
+				"Expected=", core.JsonStringifyMust(testData.ExpectedValue),
 			)
 		}
 	}
@@ -70,7 +71,7 @@ func SetTestData(yield func(data *SetData) bool) {
 				},
 			},
 			ExpectedOk:    1,
-			ExpectedValue: []*UserProfile{nil, nil, nil, nil, nil, {Address: Address{ZipCode: internal.Ptr("1234")}}},
+			ExpectedValue: []*UserProfile{nil, nil, nil, nil, nil, {Address: Address{ZipCode: core.Ptr("1234")}}},
 		},
 	) {
 		return
@@ -103,7 +104,7 @@ func SetTestData(yield func(data *SetData) bool) {
 			ValueToSet:    "1234",
 			Schema:        UserProfileSchema(),
 			ExpectedOk:    1,
-			ExpectedValue: UserProfile{Address: Address{ZipCode: internal.Ptr("1234")}},
+			ExpectedValue: UserProfile{Address: Address{ZipCode: core.Ptr("1234")}},
 		},
 	) {
 		return
@@ -116,7 +117,7 @@ func SetTestData(yield func(data *SetData) bool) {
 			ValueToSet:    "1234",
 			Schema:        AddressSchema(),
 			ExpectedOk:    1,
-			ExpectedValue: Address{ZipCode: internal.Ptr("1234")},
+			ExpectedValue: Address{ZipCode: core.Ptr("1234")},
 		},
 	) {
 		return

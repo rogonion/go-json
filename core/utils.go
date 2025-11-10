@@ -1,7 +1,8 @@
-package internal
+package core
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"unicode"
 )
@@ -68,4 +69,16 @@ func JsonStringifyMust(value any) any {
 // Useful for functions that require pointers to data.
 func Ptr[T any](v T) *T {
 	return &v
+}
+
+// As cast value to T.
+//
+// Useful for quick cast tests with errors.
+func As[T any](value any) (T, error) {
+	if valueT, ok := value.(T); ok {
+		return valueT, nil
+	}
+
+	var zero T
+	return zero, errors.New("cast failed")
 }

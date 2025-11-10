@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 )
 
 func TestObject_AreEqual(t *testing.T) {
@@ -13,8 +13,8 @@ func TestObject_AreEqual(t *testing.T) {
 			t.Error(
 				"AreEqual(testData.Left, testData.Right) not equal to testData.Expected\n",
 				"testData.Expected", testData.Expected, "\n",
-				"testData.Left", internal.JsonStringifyMust(testData.Left), "\n",
-				"testData.Right", internal.JsonStringifyMust(testData.Right),
+				"testData.Left", core.JsonStringifyMust(testData.Left), "\n",
+				"testData.Right", core.JsonStringifyMust(testData.Right),
 			)
 		}
 	}

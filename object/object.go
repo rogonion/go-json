@@ -42,7 +42,49 @@ func NewObject(source any) *Object {
 	return n
 }
 
-// Object is the module for manipulating a source object.
+/*
+Object is the module for manipulating a source object.
+
+Usage:
+ 1. Instantiate using NewObject.
+ 2. Set required parameters.
+ 3. Manipulate source using Object.Get, Object.Set, Object.Delete, or Object.ForEach.
+ 4. Get modified source using Object.GetSource.
+
+Example:
+
+	type Address struct {
+		Street  string
+		City    string
+		ZipCode *string
+	}
+
+	source := map[string]any{
+		"data": map[string]any{
+			"metadata": struct {
+				Address Address
+				Status  string
+			}{
+				Address: Address{
+					Street: "123 Main St",
+					City:   "Anytown",
+				},
+				Status: "active",
+			},
+		},
+	}
+
+	objManip := NewObject().WithSource(source)
+
+	valueFound, ok, err := objManip.Get("$.data.metadata.Address.City")
+
+	noOfModifications, err := objManip.Set("$.data.metadata.Status", "inactive")
+
+	noOfModifications, err = objManip.Delete("$.data.metadata.Status")
+
+	// retrieve modified source after Set/Delete
+	var modifiedSource any = objManip.GetSource()
+*/
 type Object struct {
 	// Used by ForEach.
 	ifValueFoundInObject IfValueFoundInObject
@@ -78,11 +120,13 @@ type Object struct {
 	defaultConverter schema.DefaultConverter
 }
 
-// IfValueFoundInObject is called when value is found at path.JSONPath.
-//
-// Parameters:
-//   - jsonPath - Current jsonPath where value was found.
-//   - value - value found.
-//
-// Return `true` to terminate ForEach loop.
+/*
+IfValueFoundInObject is called when value is found at path.JSONPath.
+
+Parameters:
+  - jsonPath - Current jsonPath where value was found.
+  - value - value found.
+
+Return `true` to terminate ForEach loop.
+*/
 type IfValueFoundInObject func(jsonPath path.RecursiveDescentSegment, value any) bool

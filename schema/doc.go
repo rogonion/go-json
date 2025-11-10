@@ -1,6 +1,12 @@
 /*
 Package schema is a module for bringing structure to an object.
 
+All schemas implement the Schema interface.
+
+The following structs have been created to implement the Schema interface:
+  - DynamicSchema - For a set of DynamicSchemaNode.
+  - DynamicSchemaNode - For an individual Schema of a single primitive, struct and its fields, map and its key-value pairs, slice, array etc.
+
 Offers the following set of functions:
   - Conversion - Convert data from one type to another using Schema. Works with simple and nested objects as well as offers the option to supply custom Converter.
   - Deserialization - Deserialize data from sources such as `json` or `yaml` using schema.
@@ -14,9 +20,8 @@ To begin using the module:
 
 1. Create a new instance of the Conversion struct. You can use the convenience method NewConversion.
 
-	The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
-
-		- customConverters - A map of custom converters. Useful especially for user-defined structs e.g. `uuid`. Can be set using `Conversion.WithCustomConverters` or `Conversion.SetCustomConverters`. The conversion logic will prioritize custom converters for any types encountered.
+The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
+  - customConverters - A map of custom Converter. Useful especially for user-defined structs e.g. `uuid`. Can be set using Conversion.WithCustomConverters or Conversion.SetCustomConverters. The conversion logic will prioritize custom converters for any types encountered.
 
 2. Call the Conversion.Convert method to convert data from one type to another.
 
@@ -46,15 +51,15 @@ Example:
 
 ## Deserialization
 
+The module will first deserialize the data then begin converting it to the destination using a DefaultConverter.
+
 To begin using the module:
 
 1. Create a new instance of the Deserialization struct. You can use the convenience method NewDeserialization which sets the `Deserialization.defaultConverter` using NewConversion.
 
-	The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
-
-		- defaultConverter - Can be set using `Deserialization.WithDefaultConverter` or `Deserialization.SetDefaultConverter`.
-
-		- customConverters - Converter used immediately after deserialization if deserialized type matches. Can be set using `Deserialization.WithCustomConverters` or `Deserialization.SetCustomConverters`.
+The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
+  - defaultConverter - Can be set using Deserialization.WithDefaultConverter or Deserialization.SetDefaultConverter.
+  - customConverters - Converter used immediately after deserialization if deserialized type matches. Can be set using Deserialization.WithCustomConverters or Deserialization.SetCustomConverters.
 
 2. Deserialize the data using the following methods:
   - Deserialization.FromJSON
@@ -101,10 +106,9 @@ To begin using the module:
 
 1. Create a new instance of the Validation struct. You can use the convenience method NewValidation which sets Validation.validateOnFirstMatch to `true`.
 
-	The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
-
-		- validateOnFirstMatch - Using `Validation.WithValidateOnFirstMatch` or `Validation.SetValidateOnFirstMatch`.
-		- customValidators - Custom validation logic based on data type. Can be set using `Validation.WithCustomValidators` or `Validation.SetCustomValidators`.
+The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
+  - validateOnFirstMatch - Using Validation.WithValidateOnFirstMatch or Validation.SetValidateOnFirstMatch.
+  - customValidators - Custom validation logic based on data type. Can be set using Validation.WithCustomValidators or Validation.SetCustomValidators.
 
 2. Validate data using Validation.ValidateData.
 

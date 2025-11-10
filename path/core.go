@@ -5,16 +5,24 @@ import (
 	"regexp"
 )
 
-// JSONPath alias for string intended to represent a JSON path.
+/*
+JSONPath alias for string intended to represent a JSON path.
+*/
 type JSONPath string
 
-// RecursiveDescentSegments alias that represents the final deconstructed JSONPath string using JSONPath.Parse.
+/*
+RecursiveDescentSegments alias that represents the final deconstructed JSONPath string using JSONPath.Parse.
+*/
 type RecursiveDescentSegments []RecursiveDescentSegment
 
-// RecursiveDescentSegment alias that represents a single sequence of recursive descent segments.
+/*
+RecursiveDescentSegment alias that represents a single sequence of recursive descent segments.
+*/
 type RecursiveDescentSegment []*CollectionMemberSegment
 
-// LinearCollectionSelector For Path linear collections (slices and arrays) selector in JSON Path like this: [start:end:step]
+/*
+LinearCollectionSelector For Path linear collections (slices and arrays) selector in JSON Path like this: [start:end:step]
+*/
 type LinearCollectionSelector struct {
 	Start   int
 	IsStart bool
@@ -24,7 +32,9 @@ type LinearCollectionSelector struct {
 	IsStep  bool
 }
 
-// CollectionMemberSegment For final individual path segment in JSONPath.
+/*
+CollectionMemberSegment For final individual path segment in JSONPath.
+*/
 type CollectionMemberSegment struct {
 	Key                      string
 	IsKey                    bool

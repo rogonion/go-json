@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/path"
 	"go.yaml.in/yaml/v4"
 )
@@ -12,9 +12,9 @@ import (
 func (n *Deserialization) deserializeWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "deserializeWithDynamicSchemaNode"
 
-	if internal.IsNilOrInvalid(source) {
+	if core.IsNilOrInvalid(source) {
 		if !schema.Nilable {
-			return reflect.Value{}, NewError(ErrDataValidationAgainstSchemaFailed, FunctionName, "source cannot be nil").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+			return reflect.Value{}, NewError(FunctionName, "source cannot be nil").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
 		}
 		return reflect.ValueOf(schema.DefaultValue), nil
 	}
@@ -47,7 +47,7 @@ func (n *Deserialization) deserializeWithDynamicSchema(source reflect.Value, sch
 	}
 
 	if len(schema.Nodes) == 0 {
-		return reflect.Value{}, NewError(ErrDataDeserializationFailed, FunctionName, "no schema nodes found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Value{}, NewError(FunctionName, "no schema nodes found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataDeserializationFailed)
 	}
 
 	var lastSchemaNodeErr error
@@ -75,7 +75,7 @@ func (n *Deserialization) deserialize(source reflect.Value, schema Schema, pathS
 	case *DynamicSchemaNode:
 		return n.deserializeWithDynamicSchemaNode(source, s, pathSegments)
 	default:
-		return reflect.Value{}, NewError(ErrDataDeserializationFailed, FunctionName, "unsupported schema type").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments)
+		return reflect.Value{}, NewError(FunctionName, "unsupported schema type").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataDeserializationFailed)
 	}
 }
 
@@ -92,13 +92,13 @@ func (n *Deserialization) deserializeDeserializedData(deserializedData any, data
 	} else {
 		dest := reflect.ValueOf(destination)
 		if result.Kind() != reflect.Pointer {
-			if result.Type() != reflect.TypeOf(destination) && reflect.TypeOf(destination).Elem().Kind() != reflect.Interface {
-				return NewError(ErrDataDeserializationFailed, FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data)
+			if result.Type() != dest.Elem().Type() && dest.Elem().Kind() != reflect.Interface {
+				return NewError(FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
 			}
 			dest.Elem().Set(result)
 		} else {
-			if result.Elem().Type() != reflect.ValueOf(destination).Elem().Type() {
-				return NewError(ErrDataDeserializationFailed, FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data)
+			if result.Elem().Type() != dest.Elem().Type() {
+				return NewError(FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
 			}
 			dest.Elem().Set(result.Elem())
 		}
@@ -111,12 +111,12 @@ func (n *Deserialization) FromYAML(data []byte, schema Schema, destination any) 
 	const FunctionName = "FromYAML"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(ErrDataDeserializationFailed, FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data)
+		return NewError(FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
 	}
 
 	var deserializedData interface{}
 	if err := yaml.Unmarshal(data, &deserializedData); err != nil {
-		return NewError(err, FunctionName, "Unmarshal from Yaml failed").WithSchema(schema).WithData(data)
+		return NewError(FunctionName, "Unmarshal from Yaml failed").WithSchema(schema).WithData(data).WithNestedError(err)
 	}
 
 	return n.deserializeDeserializedData(deserializedData, string(data), schema, destination)
@@ -126,12 +126,12 @@ func (n *Deserialization) FromJSON(data []byte, schema Schema, destination any) 
 	const FunctionName = "FromJSON"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(ErrDataDeserializationFailed, FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data)
+		return NewError(FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
 	}
 
 	var deserializedData interface{}
 	if err := json.Unmarshal(data, &deserializedData); err != nil {
-		return NewError(err, FunctionName, "Unmarshal from JSON failed").WithSchema(schema).WithData(data)
+		return NewError(FunctionName, "Unmarshal from JSON failed").WithSchema(schema).WithData(data).WithNestedError(err)
 	}
 
 	return n.deserializeDeserializedData(deserializedData, string(data), schema, destination)
@@ -161,6 +161,51 @@ func NewDeserialization() *Deserialization {
 	return n
 }
 
+/*
+Deserialization used to deserialize data using Schema.
+
+Usage:
+ 1. Instantiate using NewDeserialization.
+ 2. Set required parameters.
+ 3. Deserialize the data using the following methods:
+    - Deserialization.FromJSON
+    - Deserialization.FromYAML
+
+Example:
+
+	deserializer := NewDeserialization()
+
+	schema := &DynamicSchemaNode{
+		Kind: reflect.Struct,
+		Type: reflect.TypeOf(UserProfile2{}),
+		ChildNodes: map[string]Schema{
+			"Name": &DynamicSchemaNode{
+				Kind: reflect.String,
+				Type: reflect.TypeOf(""),
+			},
+			"Age": &DynamicSchemaNode{
+				Kind: reflect.Int,
+				Type: reflect.TypeOf(0),
+			},
+			"Country": &DynamicSchemaNode{
+				Kind: reflect.String,
+				Type: reflect.TypeOf(""),
+			},
+			"Occupation": &DynamicSchemaNode{
+				Kind: reflect.String,
+				Type: reflect.TypeOf(""),
+			},
+		},
+	}
+
+	json := "{"Name":"John Doe"}"
+	var jsonDestination UserProfile2
+	err := deserializer.FromJSON([]byte(json), schema, &jsonDestination)
+
+	yaml := strings.TrimSpace(`Name: John Doe`)
+	var yamlDestination UserProfile2
+	err := deserializer.FromYAML([]byte(yaml), schema, &yamlDestination)
+*/
 type Deserialization struct {
 	// Base converter to use.
 	defaultConverter DefaultConverter

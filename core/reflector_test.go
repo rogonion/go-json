@@ -3,8 +3,6 @@ package core
 import (
 	"reflect"
 	"testing"
-
-	"github.com/rogonion/go-json/internal"
 )
 
 func TestIsMap(t *testing.T) {
@@ -15,7 +13,7 @@ func TestIsMap(t *testing.T) {
 			t.Error(
 				"expected ExpectedToBeMap=", isMapData.ExpectedToBeMap, "\n",
 				"got=", isMap, "\n",
-				"data", internal.JsonStringifyMust(isMapData.Data),
+				"data", JsonStringifyMust(isMapData.Data),
 			)
 		}
 
@@ -24,7 +22,7 @@ func TestIsMap(t *testing.T) {
 				t.Error(
 					"expected MapKeyType=", isMapData.MapKeyType.String(), "\n",
 					"got=", mapKeyType.String(), "\n",
-					"data", internal.JsonStringifyMust(isMapData.Data),
+					"data", JsonStringifyMust(isMapData.Data),
 				)
 			}
 
@@ -32,7 +30,7 @@ func TestIsMap(t *testing.T) {
 				t.Error(
 					"expected MapValueType=", isMapData.MapValueType.String(), "\n",
 					"got=", mapValueType.String(), "\n",
-					"data", internal.JsonStringifyMust(isMapData.Data),
+					"data", JsonStringifyMust(isMapData.Data),
 				)
 			}
 		}
@@ -47,7 +45,7 @@ func TestIsArray(t *testing.T) {
 			t.Error(
 				"expected ExpectedToBeArray=", isArrayData.ExpectedToBeArray, "\n",
 				"got=", isArray, "\n",
-				"data", internal.JsonStringifyMust(isArrayData.Data),
+				"data", JsonStringifyMust(isArrayData.Data),
 			)
 		}
 
@@ -56,7 +54,7 @@ func TestIsArray(t *testing.T) {
 				t.Error(
 					"expected ArrayItemType=", isArrayData.ArrayItemType.String(), "\n",
 					"got=", listItemType.String(), "\n",
-					"data", internal.JsonStringifyMust(isArrayData.Data),
+					"data", JsonStringifyMust(isArrayData.Data),
 				)
 			}
 		}
@@ -71,7 +69,7 @@ func TestIsSlice(t *testing.T) {
 			t.Error(
 				"expected ExpectedToBeSlice=", isSliceData.ExpectedToBeSlice, "\n",
 				"got=", isSliceData, "\n",
-				"data", internal.JsonStringifyMust(isSliceData.Data),
+				"data", JsonStringifyMust(isSliceData.Data),
 			)
 		}
 
@@ -80,7 +78,7 @@ func TestIsSlice(t *testing.T) {
 				t.Error(
 					"expected ArrayItemType=", isSliceData.SliceItemType.String(), "\n",
 					"got=", listItemType.String(), "\n",
-					"data", internal.JsonStringifyMust(isSliceData.Data),
+					"data", JsonStringifyMust(isSliceData.Data),
 				)
 			}
 		}

@@ -1,6 +1,6 @@
 # go-json
 
-A library for working with objects i.e, data whose layout and structure resembles `JSON`'s tree structure.
+A library for working with objects i.e, data whose layout and structure resembles `JSON` tree structure.
 
 An object can be a primitive value or a large and deeply nested collection.
 

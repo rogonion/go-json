@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid/v5"
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 )
 
 func TestSchema_DeserializeFromYaml(t *testing.T) {
@@ -18,7 +18,7 @@ func TestSchema_DeserializeFromYaml(t *testing.T) {
 			t.Error(
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",
 				"schema=", testData.Schema, "\n",
-				"data=", internal.JsonStringifyMust(testData.Source), "\n",
+				"data=", core.JsonStringifyMust(testData.Source), "\n",
 			)
 			var schemaError *Error
 			if errors.As(err, &schemaError) {
@@ -33,7 +33,7 @@ func TestSchema_DeserializeFromYaml(t *testing.T) {
 				t.Error(
 					"expected res to be equal to testData.ExpectedData\n",
 					"schema=", testData.Schema, "\n",
-					"res", internal.JsonStringifyMust(res), "\n",
+					"res", core.JsonStringifyMust(res), "\n",
 				)
 			}
 		}

@@ -7,7 +7,7 @@ import (
 	"reflect"
 
 	"github.com/gofrs/uuid/v5"
-	"github.com/rogonion/go-json/internal"
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/path"
 )
 
@@ -35,7 +35,7 @@ func NestedItemSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(NestedItem{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"ID": &DynamicSchemaNode{
 				Kind: reflect.Int,
 				Type: reflect.TypeOf(0),
@@ -77,7 +77,7 @@ type Shape interface {
 func ShapeSchema() Schema {
 	return &DynamicSchema{
 		DefaultSchemaNodeKey: DynamicSchemaDefaultNodeKey,
-		Nodes: map[string]*DynamicSchemaNode{
+		Nodes: DynamicSchemaNodes{
 			"Circle": circleSchema(),
 			"Square": squareSchema(),
 		},
@@ -91,7 +91,7 @@ func ListOfShapesSchema() Schema {
 		Type: reflect.TypeOf([]Shape{}),
 		ChildNodesLinearCollectionElementsSchema: &DynamicSchemaNode{
 			Kind:                    reflect.Pointer,
-			Type:                    reflect.TypeOf(internal.Ptr(x)),
+			Type:                    reflect.TypeOf(core.Ptr(x)),
 			ChildNodesPointerSchema: ShapeSchema(),
 		},
 	}
@@ -109,7 +109,7 @@ func circleSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(Circle{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"Radius": &DynamicSchemaNode{
 				Kind: reflect.Float64,
 				Type: reflect.TypeOf(0.0),
@@ -130,7 +130,7 @@ func squareSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(Square{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"Side": &DynamicSchemaNode{
 				Kind: reflect.Float64,
 				Type: reflect.TypeOf(0.0),
@@ -148,7 +148,7 @@ func User2Schema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(user2{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"ID": &DynamicSchemaNode{
 				Kind: reflect.TypeOf(uuid.UUID{}).Kind(),
 				Type: reflect.TypeOf(uuid.UUID{}),
@@ -170,14 +170,14 @@ func UserWithAddressSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(UserWithAddress{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"Name": &DynamicSchemaNode{
 				Kind: reflect.String,
 				Type: reflect.TypeOf(""),
 			},
 			"Address": &DynamicSchemaNode{
 				Kind:                    reflect.Pointer,
-				Type:                    reflect.TypeOf(internal.Ptr(Address{})),
+				Type:                    reflect.TypeOf(core.Ptr(Address{})),
 				ChildNodesPointerSchema: AddressSchema(),
 			},
 		},
@@ -193,12 +193,12 @@ func UserWithUuidIdSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(UserWithUuidId{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"ID": &DynamicSchemaNode{
 				Kind:      reflect.TypeOf(uuid.UUID{}).Kind(),
 				Type:      reflect.TypeOf(uuid.UUID{}),
-				Validator: internal.Ptr(Pgxuuid{}),
-				Converter: internal.Ptr(Pgxuuid{}),
+				Validator: core.Ptr(Pgxuuid{}),
+				Converter: core.Ptr(Pgxuuid{}),
 			},
 			"Profile": UserProfile2Schema(),
 		},
@@ -215,7 +215,7 @@ func UserSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(User{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"ID": &DynamicSchemaNode{
 				Kind: reflect.Int,
 				Type: reflect.TypeOf(int(0)),
@@ -242,7 +242,7 @@ func MapUserSchema() *DynamicSchemaNode {
 		},
 		ChildNodesAssociativeCollectionEntriesValueSchema: &DynamicSchemaNode{
 			Kind:                    reflect.Pointer,
-			Type:                    reflect.TypeOf(internal.Ptr(User{})),
+			Type:                    reflect.TypeOf(core.Ptr(User{})),
 			ChildNodesPointerSchema: UserSchema(),
 		},
 	}
@@ -258,7 +258,7 @@ func ProductSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(Product{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"ID": &DynamicSchemaNode{
 				Kind: reflect.Int,
 				Type: reflect.TypeOf(int(0)),
@@ -292,7 +292,7 @@ func CompanySchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(Company{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"Name": &DynamicSchemaNode{
 				Kind: reflect.String,
 				Type: reflect.TypeOf(""),
@@ -302,7 +302,7 @@ func CompanySchema() *DynamicSchemaNode {
 				Type: reflect.TypeOf([]*User{}),
 				ChildNodesLinearCollectionElementsSchema: &DynamicSchemaNode{
 					Kind:                    reflect.Pointer,
-					Type:                    reflect.TypeOf(internal.Ptr(User{})),
+					Type:                    reflect.TypeOf(core.Ptr(User{})),
 					ChildNodesPointerSchema: UserSchema(),
 				},
 			},
@@ -320,7 +320,7 @@ func AddressSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(Address{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"Street": &DynamicSchemaNode{
 				Kind: reflect.String,
 				Type: reflect.TypeOf(""),
@@ -331,7 +331,7 @@ func AddressSchema() *DynamicSchemaNode {
 			},
 			"ZipCode": &DynamicSchemaNode{
 				Kind: reflect.Pointer,
-				Type: reflect.TypeOf(internal.Ptr("")),
+				Type: reflect.TypeOf(core.Ptr("")),
 				ChildNodesPointerSchema: &DynamicSchemaNode{
 					Kind: reflect.String,
 					Type: reflect.TypeOf(""),
@@ -351,7 +351,7 @@ func UserProfileSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(UserProfile{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"Name": &DynamicSchemaNode{
 				Kind: reflect.String,
 				Type: reflect.TypeOf(""),
@@ -376,7 +376,7 @@ func EmployeeSchema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(Employee{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"ID": &DynamicSchemaNode{
 				Kind: reflect.Int,
 				Type: reflect.TypeOf(0),
@@ -417,7 +417,7 @@ func UserProfile2Schema() *DynamicSchemaNode {
 	return &DynamicSchemaNode{
 		Kind: reflect.Struct,
 		Type: reflect.TypeOf(UserProfile2{}),
-		ChildNodes: map[string]Schema{
+		ChildNodes: ChildNodes{
 			"Name": &DynamicSchemaNode{
 				Kind: reflect.String,
 				Type: reflect.TypeOf(""),
@@ -441,7 +441,7 @@ func UserProfile2Schema() *DynamicSchemaNode {
 func DynamicUserSchema() *DynamicSchema {
 	return &DynamicSchema{
 		DefaultSchemaNodeKey: "UserWithAddress",
-		Nodes: map[string]*DynamicSchemaNode{
+		Nodes: DynamicSchemaNodes{
 			"User":            UserSchema(),
 			"User2":           User2Schema(),
 			"UserProfile":     UserProfileSchema(),
@@ -463,16 +463,16 @@ func (n *Pgxuuid) Convert(data reflect.Value, currentSchema Schema, pathSegments
 		if uuidString, err := uuid.FromString(d); err == nil {
 			return reflect.ValueOf(uuidString), nil
 		} else {
-			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from string failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
+			return reflect.Value{}, NewError(FunctionName, "RecursiveConvert to uuid from string failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 	case []byte:
 		if uuidBytes, err := uuid.FromBytes(d); err == nil {
 			return reflect.ValueOf(uuidBytes), nil
 		} else {
-			return reflect.Value{}, NewError(err, FunctionName, "RecursiveConvert to uuid from bytes failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
+			return reflect.Value{}, NewError(FunctionName, "RecursiveConvert to uuid from bytes failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 	default:
-		return reflect.Value{}, NewError(nil, FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
+		return reflect.Value{}, NewError(FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
 	}
 }
 
@@ -482,20 +482,20 @@ func (n *Pgxuuid) ValidateData(data any, currentSchema Schema, pathSegments path
 	switch d := data.(type) {
 	case uuid.UUID:
 		if d.IsNil() {
-			return false, NewError(nil, FunctionName, "uuid is nil").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
+			return false, NewError(FunctionName, "uuid is nil").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
 		}
 		return true, nil
 	case string:
 		if _, err := uuid.FromString(d); err != nil {
-			return false, NewError(err, FunctionName, "string not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
+			return false, NewError(FunctionName, "string not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 		return true, nil
 	case []byte:
 		if _, err := uuid.FromBytes(d); err != nil {
-			return false, NewError(err, FunctionName, "[]bytes not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
+			return false, NewError(FunctionName, "[]bytes not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments).WithNestedError(err)
 		}
 		return true, nil
 	default:
-		return false, NewError(nil, FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
+		return false, NewError(FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
 	}
 }

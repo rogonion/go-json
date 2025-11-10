@@ -3,6 +3,7 @@ package path
 import (
 	"reflect"
 
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 
 	"testing"
@@ -12,9 +13,9 @@ func TestPath_ExtractCollectionMembersSegments(t *testing.T) {
 	for testData := range ExtractCollectionMemberSegmentsTestData {
 		result := testData.Segment.ExtractCollectionMemberSegments()
 
-		if !reflect.DeepEqual(internal.JsonStringifyMust(&result), internal.JsonStringifyMust(&testData.ExpectedSegments)) {
+		if !reflect.DeepEqual(core.JsonStringifyMust(&result), core.JsonStringifyMust(&testData.ExpectedSegments)) {
 			t.Error(
-				"expected=", internal.JsonStringifyMust(testData.ExpectedSegments), "\n",
+				"expected=", core.JsonStringifyMust(testData.ExpectedSegments), "\n",
 				"got=", result, "\n",
 				"Test Data Segment=", testData.Segment,
 			)

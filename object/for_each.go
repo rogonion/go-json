@@ -9,17 +9,19 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
-// ForEach loops through `Object.source` using jsonPath as the guide.
-//
-// Useful for the following JSONPath syntax:
-//   - Recursive descent e.g, `$...One`
-//   - Wildcard e.g., `$.One[*]`
-//   - Union selector e.g., `$.['One','Two','Three']`
-//   - Array selector e.g., `$.[1:6:2]`
-//
-// Parameters:
-//   - jsonPath
-//   - ifValueFoundInObject - Called when each value is found
+/*
+ForEach loops through `Object.source` using jsonPath as the guide.
+
+Useful for the following JSONPath syntax:
+  - Recursive descent e.g, `$...One`
+  - Wildcard e.g., `$.One[*]`
+  - Union selector e.g., `$.['One','Two','Three']`
+  - Array selector e.g., `$.[1:6:2]`
+
+Parameters:
+  - jsonPath
+  - ifValueFoundInObject - Called when each value is found.
+*/
 func (n *Object) ForEach(jsonPath path.JSONPath, ifValueFoundInObject IfValueFoundInObject) {
 	n.recursiveDescentSegments = jsonPath.Parse()
 	n.ifValueFoundInObject = ifValueFoundInObject
@@ -49,7 +51,7 @@ func (n *Object) recursiveForEachValue(currentValue reflect.Value, currentPathSe
 		return false
 	}
 
-	if internal.IsNilOrInvalid(currentValue) {
+	if core.IsNilOrInvalid(currentValue) {
 		return false
 	}
 
@@ -269,7 +271,7 @@ func (n *Object) recursiveForEachValue(currentValue reflect.Value, currentPathSe
 
 	if currentValue.Kind() == reflect.Struct {
 		if recursiveSegment.IsKey {
-			if !internal.StartsWithCapital(recursiveSegment.Key) {
+			if !core.StartsWithCapital(recursiveSegment.Key) {
 				return false
 			}
 
@@ -311,7 +313,7 @@ func (n *Object) recursiveForEachValue(currentValue reflect.Value, currentPathSe
 
 			if recursiveSegment.IsKeyIndexAll {
 				for i := 0; i < currentValue.NumField(); i++ {
-					if !internal.IsStructFieldExported(currentValue.Type().Field(i)) {
+					if !core.IsStructFieldExported(currentValue.Type().Field(i)) {
 						continue
 					}
 
@@ -323,7 +325,7 @@ func (n *Object) recursiveForEachValue(currentValue reflect.Value, currentPathSe
 				}
 			} else {
 				for _, unionKey := range recursiveSegment.UnionSelector {
-					if !unionKey.IsKey || !internal.StartsWithCapital(unionKey.Key) {
+					if !unionKey.IsKey || !core.StartsWithCapital(unionKey.Key) {
 						continue
 					}
 
@@ -392,7 +394,7 @@ func (n *Object) recursiveDescentForEachValue(currentValue reflect.Value, curren
 		return false
 	}
 
-	if internal.IsNilOrInvalid(currentValue) {
+	if core.IsNilOrInvalid(currentValue) {
 		return false
 	}
 
@@ -472,7 +474,7 @@ func (n *Object) recursiveDescentForEachValue(currentValue reflect.Value, curren
 			}
 		}
 	} else if currentValue.Kind() == reflect.Struct {
-		if internal.StartsWithCapital(recursiveDescentSearchSegment.Key) {
+		if core.StartsWithCapital(recursiveDescentSearchSegment.Key) {
 			if structFieldValue := currentValue.FieldByName(recursiveDescentSearchSegment.Key); structFieldValue.IsValid() {
 				nextPathSegments := append(currentPath, recursiveDescentSearchSegment)
 
@@ -509,7 +511,7 @@ func (n *Object) recursiveDescentForEachValue(currentValue reflect.Value, curren
 		}
 
 		for i := 0; i < currentValue.NumField(); i++ {
-			if !internal.IsStructFieldExported(currentValue.Type().Field(i)) {
+			if !core.IsStructFieldExported(currentValue.Type().Field(i)) {
 				continue
 			}
 

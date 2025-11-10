@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 	"github.com/rogonion/go-json/path"
 )
@@ -20,8 +21,8 @@ func TestObject_ForEachValue(t *testing.T) {
 			t.Error(
 				"expected res to be equal to testData.Expected\n",
 				"path=", testData.Path, "\n",
-				"res=", internal.JsonStringifyMust(res), "\n",
-				"JSON testData.Expected=", internal.JsonStringifyMust(testData.Expected),
+				"res=", core.JsonStringifyMust(res), "\n",
+				"JSON testData.Expected=", core.JsonStringifyMust(testData.Expected),
 			)
 		}
 	}
