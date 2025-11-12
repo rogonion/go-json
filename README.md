@@ -12,20 +12,15 @@ Particularly useful for:
 
 Relies on the language's reflection capabilities.
 
-The [core set of modules](object) for manipulating an object using `JSONPath` are as follows:
-
-- Set value(s) in an object.
-- Get value(s) in an object.
-- Delete value(s) in an object.
-- Loop through each value(s) in an object (For Each).
-- Check if two values are equal.
-
 ## Sections
 
 - [Installation](#installation)
 - [JSONPath](#jsonpath)
-- [Supported data type](#supported-data-types)
-- [Additional modules](#additional-modules)
+- [Modules](#modules)
+    - [Object](#object)
+    - [Path](#path)
+    - [Schema](#schema)
+- [Supported data types](#supported-data-types)
 
 ## Installation
 
@@ -35,7 +30,7 @@ go get github.com/rogonion/go-json
 
 ## JSONPath
 
-As defined [here](https://en.wikipedia.org/wiki/JSONPath), it is a query language for querying values JSON-style.
+As defined [here](https://en.wikipedia.org/wiki/JSONPath), it is a query language for working with values JSON style.
 
 The module aims to extract path segments from a JSONPath string.
 
@@ -54,9 +49,65 @@ Example JSONPaths:
 - `$.address[1:4:2]['country-of-orign']`
 - `$[*].countries[1,3,5]`
 
-## Additional modules
+## Modules
 
-These modules support the core objective of the library.
+### Object
+
+This [module](object) allows one to manipulate data using [JSONPath](#jsonpath).
+
+With this module, you can do the following:
+
+- Set value(s) in an object.
+- Get value(s) in an object.
+- Delete value(s) in an object.
+- Loop through each value(s) in an object (For Each).
+- Check if two values are equal with options for setting up custom equal checkers.
+
+Example usage for manipulating a single object:
+
+```go
+package main
+
+import "github.com/rogonion/go-json/object"
+
+type Address struct {
+	Street  string
+	City    string
+	ZipCode *string
+}
+
+var source any = map[string]any{
+	"data": map[string]any{
+		"metadata": struct {
+			Address Address
+			Status  string
+		}{
+			Address: Address{
+				Street: "123 Main St",
+				City:   "Anytown",
+			},
+			Status: "active",
+		},
+	},
+}
+
+var objManip *object.Object = object.NewObject(source)
+
+var valueFound any
+var ok bool
+var err error
+var noOfModifications uint64
+
+valueFound, ok, err = objManip.Get("$.data.metadata.Address.City")
+
+noOfModifications, err = objManip.Set("$.data.metadata.Status", "inactive")
+
+noOfModifications, err = objManip.Delete("$.data.metadata.Status")
+
+// retrieve modified source after Set/Delete
+var modifiedSource any = objManip.GetSource()
+
+```
 
 ### Path
 
@@ -64,6 +115,17 @@ These modules support the core objective of the library.
 segment.
 
 Such information is used when manipulating data using the core modules like get, set, and delete.
+
+Example parsing JSONPath string:
+
+```go
+package main
+
+import "github.com/rogonion/go-json/path"
+
+var jsonPath path.JSONPath = "$[1,3,5]"
+var parsedPath path.RecursiveDescentSegments = jsonPath.Parse()
+```
 
 ### Schema
 
@@ -80,6 +142,120 @@ Useful for the following purposes:
   of
   type any can end up being an array of pointers to structs if that is the schema definition.
 - Fetch the schema of data at a `JSONPath`.
+
+Example usage:
+
+#### Conversion
+
+```go
+package main
+
+import (
+	"reflect"
+
+	"github.com/rogonion/go-json/schema"
+)
+
+var sch schema.Schema = &schema.DynamicSchemaNode{
+	Kind: reflect.Map,
+	Type: reflect.TypeOf(map[int]int{}),
+	ChildNodesAssociativeCollectionEntriesKeySchema: &schema.DynamicSchemaNode{
+		Kind: reflect.Int,
+		Type: reflect.TypeOf(0),
+	},
+	ChildNodesAssociativeCollectionEntriesValueSchema: &schema.DynamicSchemaNode{
+		Kind: reflect.Int,
+		Type: reflect.TypeOf(0),
+	},
+}
+
+var source any = map[string]string{
+	"1": "1",
+	"2": "2",
+	"3": "3",
+}
+var destination any
+var converter schema.DefaultConverter = schema.NewConversion()
+var err error = converter.Convert(source, sch, &destination)
+
+```
+
+#### Deserialization
+
+```go
+package main
+
+import (
+	"reflect"
+	"strings"
+
+	"github.com/rogonion/go-json/schema"
+)
+
+type UserProfile2 struct {
+	Name       string
+	Age        int
+	Country    string
+	Occupation string
+}
+
+var sch schema.Schema = &schema.DynamicSchemaNode{
+	Kind: reflect.Struct,
+	Type: reflect.TypeOf(UserProfile2{}),
+	ChildNodes: map[string]schema.Schema{
+		"Name": &schema.DynamicSchemaNode{
+			Kind: reflect.String,
+			Type: reflect.TypeOf(""),
+		},
+		"Age": &schema.DynamicSchemaNode{
+			Kind: reflect.Int,
+			Type: reflect.TypeOf(0),
+		},
+		"Country": &schema.DynamicSchemaNode{
+			Kind: reflect.String,
+			Type: reflect.TypeOf(""),
+		},
+		"Occupation": &schema.DynamicSchemaNode{
+			Kind: reflect.String,
+			Type: reflect.TypeOf(""),
+		},
+	},
+}
+
+var deserializer schema.Deserializer = schema.NewDeserialization()
+
+var json string = "{\"Name\":\"John Doe\"}"
+var jsonDestination UserProfile2
+var err error = deserializer.FromJSON([]byte(json), sch, &jsonDestination)
+
+var yaml string = strings.TrimSpace(`Name: John Doe`)
+var yamlDestination UserProfile2
+err = deserializer.FromYAML([]byte(yaml), schema, &yamlDestination)
+
+```
+
+#### Validation
+
+```go
+package main
+
+import (
+	"reflect"
+
+	"github.com/rogonion/go-json/schema"
+)
+
+var sch schema.Schema = &schema.DynamicSchemaNode{
+	Kind: reflect.String,
+	Type: reflect.TypeOf(""),
+}
+
+var validation schema.DefaultValidator = schema.NewValidation()
+var ok bool
+var err error
+ok, err = validation.ValidateData("this is a string", schema)
+
+```
 
 ## Supported data types
 

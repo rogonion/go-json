@@ -92,7 +92,7 @@ Example:
 		},
 	}
 
-	json := "{"Name":"John Doe"}"
+	json := "{\"Name\":\"John Doe\"}"
 	var jsonDestination UserProfile2
 	err := deserializer.FromJSON([]byte(json), schema, &jsonDestination)
 
