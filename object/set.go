@@ -30,7 +30,7 @@ func (n *Object) Set(jsonPath path.JSONPath, value any) (uint64, error) {
 		return 1, nil
 	}
 
-	n.noOfModifications = 0
+	n.noOfResults = 0
 	n.lastError = nil
 	n.recursiveDescentSegments = jsonPath.Parse()
 	n.valueToSet = value
@@ -54,10 +54,10 @@ func (n *Object) Set(jsonPath path.JSONPath, value any) (uint64, error) {
 		n.source = n.recursiveDescentSet(n.source, currentPathSegmentIndexes, path.RecursiveDescentSegment{n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]})
 	}
 
-	if n.noOfModifications > 0 {
-		return n.noOfModifications, nil
+	if n.noOfResults > 0 {
+		return n.noOfResults, nil
 	}
-	return n.noOfModifications, n.lastError
+	return n.noOfResults, n.lastError
 }
 
 func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment, currentValueType reflect.Type) reflect.Value {
@@ -149,7 +149,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 						if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 							if value, err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType); err == nil {
 								currentValue.SetMapIndex(mapKeyR, reflect.ValueOf(value))
-								n.noOfModifications++
+								n.noOfResults++
 							}
 						} else {
 							recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -207,7 +207,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						if value, err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType); err == nil {
 							currentValue.SetMapIndex(mapKey, reflect.ValueOf(value))
-							n.noOfModifications++
+							n.noOfResults++
 						}
 						continue
 					}
@@ -265,7 +265,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 							if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 								if value, err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType); err == nil {
 									currentValue.SetMapIndex(mapKeyR, reflect.ValueOf(value))
-									n.noOfModifications++
+									n.noOfResults++
 								}
 								continue
 							}
@@ -320,7 +320,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 							arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveSegment), n.schema)
 							if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceType); err == nil {
 								arraySliceValue.Set(reflect.ValueOf(value))
-								n.noOfModifications++
+								n.noOfResults++
 							}
 						} else {
 							recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -353,7 +353,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				} else {
 					currentValue = reflect.MakeSlice(currentValue.Type(), 0, 0)
 				}
-				n.noOfModifications++
+				n.noOfResults++
 			} else {
 				for i := 0; i < currentValue.Len(); i++ {
 					arraySliceValue := currentValue.Index(i)
@@ -367,7 +367,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 							arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, collectionMemberSegment), n.schema)
 							if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type()); err == nil {
 								arraySliceValue.Set(reflect.ValueOf(value))
-								n.noOfModifications++
+								n.noOfResults++
 							}
 						}
 
@@ -429,7 +429,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 						arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, unionKey), n.schema)
 						if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type()); err == nil {
 							arraySliceValue.Set(reflect.ValueOf(value))
-							n.noOfModifications++
+							n.noOfResults++
 						}
 					}
 
@@ -491,7 +491,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 						arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, collectionMemberSegment), n.schema)
 						if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type()); err == nil {
 							arraySliceValue.Set(reflect.ValueOf(value))
-							n.noOfModifications++
+							n.noOfResults++
 						}
 					}
 
@@ -532,7 +532,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 							structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveSegment), n.schema)
 							if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type()); err == nil {
 								structFieldValue.Set(reflect.ValueOf(value))
-								n.noOfModifications++
+								n.noOfResults++
 							}
 						} else {
 							recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -573,7 +573,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 						structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, structFieldSegment), n.schema)
 						if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structField.Type()); err == nil {
 							structField.Set(reflect.ValueOf(value))
-							n.noOfModifications++
+							n.noOfResults++
 						}
 						continue
 					}
@@ -616,7 +616,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 						structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, unionKey), n.schema)
 						if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type()); err == nil {
 							structFieldValue.Set(reflect.ValueOf(value))
-							n.noOfModifications++
+							n.noOfResults++
 						}
 						continue
 					}
@@ -778,7 +778,7 @@ func (n *Object) recursiveDescentSet(currentValue reflect.Value, currentPathSegm
 						mapValueSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveDescentSearchSegment), n.schema)
 						if value, err := n.convertSourceToTargetType(n.valueToSet, mapValueSchema, mapValueType); err == nil {
 							currentValue.SetMapIndex(mapKey, reflect.ValueOf(value))
-							n.noOfModifications++
+							n.noOfResults++
 						}
 					} else {
 						recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -827,7 +827,7 @@ func (n *Object) recursiveDescentSet(currentValue reflect.Value, currentPathSegm
 						structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveDescentSearchSegment), n.schema)
 						if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type()); err == nil {
 							structFieldValue.Set(reflect.ValueOf(value))
-							n.noOfModifications++
+							n.noOfResults++
 						}
 					} else {
 						recursiveDescentIndexes := internal.PathSegmentsIndexes{

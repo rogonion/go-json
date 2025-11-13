@@ -16,14 +16,57 @@ func (n *Object) WithSchema(value schema.Schema) *Object {
 	return n
 }
 
-// GetSource call method when done working with the source.
-func (n *Object) GetSource() any {
+/*
+GetValueFoundInterface retrieve value found in Go form after Get.
+
+If Object.valueFound.IsValid returns `false`, it will return nil.
+*/
+func (n *Object) GetValueFoundInterface() any {
+	if n.valueFound.IsValid() {
+		return n.valueFound.Interface()
+	}
+	return nil
+}
+
+/*
+GetValueFoundReflected retrieve value found in reflect form after Get.
+*/
+func (n *Object) GetValueFoundReflected() reflect.Value {
+	return n.valueFound
+}
+
+/*
+GetSourceInterface if you want the current state of source in its interface form.
+*/
+func (n *Object) GetSourceInterface() any {
 	return n.source.Interface()
 }
 
-func (n *Object) SetSource(value any) {
+/*
+GetSourceReflected if you want the current source in its reflect form.
+*/
+func (n *Object) GetSourceReflected() reflect.Value {
+	return n.source
+}
+
+func (n *Object) SetSourceInterface(value any) {
 	n.source = reflect.ValueOf(value)
 	n.sourceType = reflect.TypeOf(value)
+}
+
+func (n *Object) WithSourceInterface(value any) *Object {
+	n.SetSourceInterface(value)
+	return n
+}
+
+func (n *Object) SetSourceReflected(value reflect.Value) {
+	n.source = value
+	n.sourceType = value.Type()
+}
+
+func (n *Object) WithSourceReflected(value reflect.Value) *Object {
+	n.SetSourceReflected(value)
+	return n
 }
 
 func (n *Object) WithDefaultConverter(value schema.DefaultConverter) *Object {
@@ -35,9 +78,8 @@ func (n *Object) SetDefaultConverter(value schema.DefaultConverter) {
 	n.defaultConverter = value
 }
 
-func NewObject(source any) *Object {
+func NewObject() *Object {
 	n := new(Object)
-	n.SetSource(source)
 	n.defaultConverter = schema.NewConversion()
 	return n
 }
@@ -47,9 +89,9 @@ Object is the module for manipulating a source object.
 
 Usage:
  1. Instantiate using NewObject.
- 2. Set required parameters.
+ 2. Set required parameters i.e., source.
  3. Manipulate source using Object.Get, Object.Set, Object.Delete, or Object.ForEach.
- 4. Get modified source using Object.GetSource.
+ 4. Get modified source using Object.GetSourceInterface.
 
 Example:
 
@@ -78,12 +120,12 @@ Example:
 
 	valueFound, ok, err := objManip.Get("$.data.metadata.Address.City")
 
-	noOfModifications, err := objManip.Set("$.data.metadata.Status", "inactive")
+	noOfResults, err := objManip.Set("$.data.metadata.Status", "inactive")
 
-	noOfModifications, err = objManip.Delete("$.data.metadata.Status")
+	noOfResults, err = objManip.Delete("$.data.metadata.Status")
 
 	// retrieve modified source after Set/Delete
-	var modifiedSource any = objManip.GetSource()
+	var modifiedSource any = objManip.GetSourceInterface()
 */
 type Object struct {
 	// Used by ForEach.
@@ -97,8 +139,11 @@ type Object struct {
 	// Value to set in source by the Set method.
 	valueToSet any
 
-	// Made by Set and Delete.
-	noOfModifications uint64
+	// Result from Get.
+	valueFound reflect.Value
+
+	// Made by Get, Set and Delete.
+	noOfResults uint64
 
 	// Last error encountered when processing the source especially for the recursive descent pattern or union pattern in path.JSONPath.
 	lastError error
@@ -107,9 +152,9 @@ type Object struct {
 	//
 	// Will be modified with Set and Delete.
 	//
-	// Initialize with NewObject parameter, or SetSource.
+	// Initialize with NewObject parameter, or SetSourceInterface.
 	source reflect.Value
-	// Computed when you use SetSource.
+	// Computed when you use SetSourceInterface.
 	sourceType reflect.Type
 
 	recursiveDescentSegments path.RecursiveDescentSegments
@@ -125,8 +170,8 @@ IfValueFoundInObject is called when value is found at path.JSONPath.
 
 Parameters:
   - jsonPath - Current jsonPath where value was found.
-  - value - value found.
+  - value - value found. If you want the Go (any) value you can call `value.Interface()`
 
 Return `true` to terminate ForEach loop.
 */
-type IfValueFoundInObject func(jsonPath path.RecursiveDescentSegment, value any) bool
+type IfValueFoundInObject func(jsonPath path.RecursiveDescentSegment, value reflect.Value) bool

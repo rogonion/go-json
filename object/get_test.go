@@ -12,10 +12,11 @@ import (
 
 func TestObject_Get(t *testing.T) {
 	for testData := range GetTestData {
-		res, ok, err := NewObject(testData.Root).Get(testData.Path)
-		if ok != testData.ExpectedOk {
+		obj := NewObject().WithSourceInterface(testData.Root)
+		noOfResults, err := obj.Get(testData.Path)
+		if noOfResults != testData.ExpectedOk {
 			t.Error(
-				"expected ok=", testData.ExpectedOk, "got ok=", ok, "\n",
+				"expected ok=", testData.ExpectedOk, "got ok=", noOfResults, "\n",
 				"path=", testData.Path,
 			)
 		}
@@ -31,11 +32,12 @@ func TestObject_Get(t *testing.T) {
 			}
 		}
 
-		if !reflect.DeepEqual(res, testData.ExpectedValue) {
+		valueFound := obj.GetValueFoundInterface()
+		if !reflect.DeepEqual(valueFound, testData.ExpectedValue) {
 			t.Error(
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
-				"res=", core.JsonStringifyMust(res), "\n",
+				"res=", core.JsonStringifyMust(valueFound), "\n",
 				"JSON testData.Expected=", core.JsonStringifyMust(testData.ExpectedValue),
 			)
 		}
@@ -46,7 +48,7 @@ type GetData struct {
 	internal.TestData
 	Root          any
 	Path          path.JSONPath
-	ExpectedOk    bool
+	ExpectedOk    uint64
 	ExpectedValue any
 }
 
@@ -70,7 +72,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$.data.metadata.Address.City",
-			ExpectedOk:    true,
+			ExpectedOk:    1,
 			ExpectedValue: "Anytown",
 		},
 	) {
@@ -95,7 +97,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$..Name",
-			ExpectedOk:    true,
+			ExpectedOk:    4,
 			ExpectedValue: []any{"Alice", "Item 1", "Item 2", "Bob"},
 		},
 	) {
@@ -115,7 +117,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$.User['ID', 'Name']",
-			ExpectedOk:    true,
+			ExpectedOk:    2,
 			ExpectedValue: []any{10, "Charlie"},
 		},
 	) {
@@ -137,7 +139,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$.Items[1].Value",
-			ExpectedOk:    true,
+			ExpectedOk:    1,
 			ExpectedValue: 20,
 		},
 	) {
@@ -152,7 +154,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				"store": map[string]any{"book": "fiction"},
 			},
 			Path:          "$.store.magazine",
-			ExpectedOk:    false,
+			ExpectedOk:    0,
 			ExpectedValue: nil,
 		},
 	) {
@@ -195,7 +197,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$..Three[::2]['TwentyFour','04']",
-			ExpectedOk:    true,
+			ExpectedOk:    2,
 			ExpectedValue: []any{[]int{0, 4}, 24},
 		},
 	) {
@@ -238,7 +240,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$..Three[::2]['TwentyFour','04']",
-			ExpectedOk:    true,
+			ExpectedOk:    2,
 			ExpectedValue: []any{"04", 24},
 		},
 	) {
@@ -285,7 +287,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$..Three[::2]..TwentyFour",
-			ExpectedOk:    true,
+			ExpectedOk:    1,
 			ExpectedValue: []any{24},
 		},
 	) {
@@ -321,7 +323,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$.one..Two[*]",
-			ExpectedOk:    true,
+			ExpectedOk:    2,
 			ExpectedValue: []any{12, 13},
 		},
 	) {
@@ -349,7 +351,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$..Six",
-			ExpectedOk:    true,
+			ExpectedOk:    3,
 			ExpectedValue: []any{"0_six", "", "2_six"},
 		},
 	) {
@@ -370,7 +372,7 @@ func GetTestData(yield func(data *GetData) bool) {
 				},
 			},
 			Path:          "$.three[1].['1']",
-			ExpectedOk:    true,
+			ExpectedOk:    1,
 			ExpectedValue: 1,
 		},
 	) {

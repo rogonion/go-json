@@ -12,8 +12,8 @@ import (
 func TestObject_ForEachValue(t *testing.T) {
 	for testData := range ForEachValueTestData {
 		res := make([]any, 0)
-		NewObject(testData.Object).ForEach(testData.Path, func(jsonPath path.RecursiveDescentSegment, value any) bool {
-			res = append(res, value)
+		NewObject().WithSourceInterface(testData.Object).ForEach(testData.Path, func(jsonPath path.RecursiveDescentSegment, value reflect.Value) bool {
+			res = append(res, value.Interface())
 			return false
 		})
 

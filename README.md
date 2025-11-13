@@ -91,21 +91,27 @@ var source any = map[string]any{
 	},
 }
 
-var objManip *object.Object = object.NewObject(source)
+var objManip *object.Object = object.NewObject().WithSourceInterface(source)
 
 var valueFound any
 var ok bool
 var err error
-var noOfModifications uint64
+var noOfResults uint64
 
-valueFound, ok, err = objManip.Get("$.data.metadata.Address.City")
+noOfResults, err = objManip.Get("$.data.metadata.Address.City")
+var valueFound any
 
-noOfModifications, err = objManip.Set("$.data.metadata.Status", "inactive")
+if noOfResults > 0 {
+    // retrieve value found if no of results is greater than 0
+    valueFound = objManip.GetValueFoundInterface()
+}
+
+noOfModifications, err := objManip.Set("$.data.metadata.Status", "inactive")
 
 noOfModifications, err = objManip.Delete("$.data.metadata.Status")
 
 // retrieve modified source after Set/Delete
-var modifiedSource any = objManip.GetSource()
+var modifiedSource any = objManip.GetSourceInterface()
 
 ```
 
@@ -174,7 +180,7 @@ var source any = map[string]string{
 	"2": "2",
 	"3": "3",
 }
-var destination any
+var destination map[int]int = make(map[int]int)
 var converter schema.DefaultConverter = schema.NewConversion()
 var err error = converter.Convert(source, sch, &destination)
 

@@ -18,11 +18,12 @@ For JSONPath syntax patterns like the recursive descent pattern, wildcard, or un
 Parameters:
   - jsonPath
 
-Returns the value(s) found, true if retrieval was successful, and an error in case retrieval was not successful.
+Returns the number of results found and the last error encountered.
 */
-func (n *Object) Get(jsonPath path.JSONPath) (any, bool, error) {
+func (n *Object) Get(jsonPath path.JSONPath) (uint64, error) {
 	if string(jsonPath) == path.JsonpathKeyRoot || jsonPath == "" {
-		return n.source.Interface(), true, nil
+		n.valueFound = n.source
+		return 1, nil
 	}
 
 	const FunctionName = "Get"
@@ -33,42 +34,42 @@ func (n *Object) Get(jsonPath path.JSONPath) (any, bool, error) {
 		LastRecursive: len(n.recursiveDescentSegments) - 1,
 	}
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive {
-		return nil, false, NewError(FunctionName, "recursiveDescentSegments empty").WithData(n.source.Interface()).WithNestedError(ErrPathSegmentInvalidError)
+		return 0, NewError(FunctionName, "recursiveDescentSegments empty").WithData(n.source.Interface()).WithNestedError(ErrPathSegmentInvalidError)
 	}
 	currentPathSegmentIndexes.LastCollection = len(n.recursiveDescentSegments[0]) - 1
 	if currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		return nil, false, NewError(FunctionName, "recursiveDescentSegments empty").WithData(n.source.Interface()).WithNestedError(ErrPathSegmentInvalidError)
+		return 0, NewError(FunctionName, "recursiveDescentSegments empty").WithData(n.source.Interface()).WithNestedError(ErrPathSegmentInvalidError)
 	}
 
 	if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-		if value, ok, err := n.recursiveGet(n.source, currentPathSegmentIndexes, path.RecursiveDescentSegment{n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]}); ok {
-			return value.Interface(), ok, err
-		} else {
-			return nil, false, err
-		}
+		n.valueFound = n.recursiveGet(n.source, currentPathSegmentIndexes, path.RecursiveDescentSegment{n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]})
+	} else {
+		n.valueFound = n.recursiveDescentGet(n.source, currentPathSegmentIndexes, path.RecursiveDescentSegment{n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]})
 	}
 
-	if value, ok, err := n.recursiveDescentGet(n.source, currentPathSegmentIndexes, path.RecursiveDescentSegment{n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]}); ok {
-		return value.Interface(), ok, err
-	} else {
-		return nil, false, err
+	if n.noOfResults > 0 {
+		return n.noOfResults, nil
 	}
+	return n.noOfResults, n.lastError
 }
 
-func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) (reflect.Value, bool, error) {
+func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveGet"
 
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		return reflect.Value{}, false, NewError(FunctionName, "currentPathSegmentIndexes empty").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, "currentPathSegmentIndexes empty").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	recursiveSegment := n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]
 	if recursiveSegment == nil {
-		return reflect.Value{}, false, NewError(FunctionName, "recursiveSegment is nil").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, "recursiveSegment is nil").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if core.IsNilOrInvalid(currentValue) {
-		return reflect.Value{}, false, NewError(FunctionName, "value nil or invalid").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, "value nil or invalid").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if currentValue.Kind() == reflect.Pointer || currentValue.Kind() == reflect.Interface {
@@ -78,7 +79,8 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 	if recursiveSegment.IsKeyRoot {
 		if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 			if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-				return currentValue, true, nil
+				n.noOfResults++
+				return currentValue
 			}
 
 			recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -87,7 +89,6 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				CurrentCollection: 0,
 				LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 			}
-
 			return n.recursiveDescentGet(currentValue, recursiveDescentIndexes, currentPath)
 		}
 
@@ -106,16 +107,19 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 		if recursiveSegment.IsKey {
 			var mapKey any
 			if err := n.defaultConverter.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
-				return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(err)
+				n.lastError = NewError(FunctionName, fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(err)
+				return reflect.Value{}
 			}
 
 			mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 					if mapValue.IsValid() {
-						return mapValue, true, nil
+						n.noOfResults++
+						return mapValue
 					}
-					return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("value of map entry %s not valid", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					n.lastError = NewError(FunctionName, fmt.Sprintf("value of map entry %s not valid", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					return reflect.Value{}
 				}
 
 				recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -124,7 +128,6 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 					CurrentCollection: 0,
 					LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 				}
-
 				return n.recursiveDescentGet(mapValue, recursiveDescentIndexes, append(currentPath, recursiveSegment))
 			}
 
@@ -134,7 +137,6 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
 				LastCollection:    currentPathSegmentIndexes.LastCollection,
 			}
-
 			return n.recursiveGet(mapValue, recursiveIndexes, append(currentPath, recursiveSegment))
 		}
 
@@ -157,7 +159,8 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 
 					var mapKey any
 					if err := n.defaultConverter.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
-						return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(err)
+						n.lastError = NewError(FunctionName, fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(err)
+						return reflect.Value{}
 					}
 
 					mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
@@ -166,11 +169,11 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 					}
 				}
 			}
-
 			return n.selectorGetLoop(dataKind, selectorSlice, recursiveSegment, currentValue, currentPathSegmentIndexes, currentPath)
 		}
 
-		return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if _, ok := core.GetArraySliceValueType(currentValue); ok {
@@ -178,16 +181,19 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 
 		if recursiveSegment.IsIndex {
 			if recursiveSegment.Index >= currentValue.Len() {
-				return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, index %s out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+				n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, index %s out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+				return reflect.Value{}
 			}
 
 			arraySliceValue := currentValue.Index(recursiveSegment.Index)
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 					if arraySliceValue.IsValid() {
-						return arraySliceValue, true, nil
+						n.noOfResults++
+						return arraySliceValue
 					}
-					return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("value in %s at index %s not valid", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					n.lastError = NewError(FunctionName, fmt.Sprintf("value in %s at index %s not valid", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					return reflect.Value{}
 				}
 
 				recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -196,7 +202,6 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 					CurrentCollection: 0,
 					LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 				}
-
 				return n.recursiveDescentGet(arraySliceValue, recursiveDescentIndexes, append(currentPath, recursiveSegment))
 			}
 
@@ -206,7 +211,6 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				CurrentCollection: currentPathSegmentIndexes.CurrentCollection + 1,
 				LastCollection:    currentPathSegmentIndexes.LastCollection,
 			}
-
 			return n.recursiveGet(arraySliceValue, recursiveIndexes, append(currentPath, recursiveSegment))
 		}
 
@@ -236,14 +240,16 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				start := 0
 				if recursiveSegment.LinearCollectionSelector.IsStart {
 					if recursiveSegment.LinearCollectionSelector.Start >= currentValue.Len() {
-						return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s Start is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s Start is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						return reflect.Value{}
 					}
 					start = recursiveSegment.LinearCollectionSelector.Start
 				}
 				step := 1
 				if recursiveSegment.LinearCollectionSelector.IsStep {
 					if recursiveSegment.LinearCollectionSelector.Step >= currentValue.Len() {
-						return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s Step is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s Step is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						return reflect.Value{}
 					}
 					if recursiveSegment.LinearCollectionSelector.Step > 0 {
 						step = recursiveSegment.LinearCollectionSelector.Step
@@ -252,7 +258,8 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				end := currentValue.Len()
 				if recursiveSegment.LinearCollectionSelector.IsEnd {
 					if recursiveSegment.LinearCollectionSelector.End >= end {
-						return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s End is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s End is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						return reflect.Value{}
 					}
 					end = recursiveSegment.LinearCollectionSelector.End
 				}
@@ -271,7 +278,8 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 			return n.selectorGetLoop(dataKind, selectorSlice, recursiveSegment, currentValue, currentPathSegmentIndexes, currentPath)
 		}
 
-		return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if currentValue.Kind() == reflect.Struct {
@@ -279,16 +287,19 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 
 		if recursiveSegment.IsKey {
 			if !core.StartsWithCapital(recursiveSegment.Key) {
-				return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("key %s is not valid for struct", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+				n.lastError = NewError(FunctionName, fmt.Sprintf("key %s is not valid for struct", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+				return reflect.Value{}
 			}
 
 			structFieldValue := currentValue.FieldByName(recursiveSegment.Key)
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 					if structFieldValue.IsValid() {
-						return structFieldValue, true, nil
+						n.noOfResults++
+						return structFieldValue
 					}
-					return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("value of field %s in struc is not valid", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					n.lastError = NewError(FunctionName, fmt.Sprintf("value of field %s in struc is not valid", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					return reflect.Value{}
 				}
 
 				recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -342,23 +353,27 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 			return n.selectorGetLoop(dataKind, selectorSlice, recursiveSegment, currentValue, currentPathSegmentIndexes, currentPath)
 		}
 
-		return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
-	return reflect.Value{}, false, NewError(FunctionName, "unsupported value at recursive segment").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+	n.lastError = NewError(FunctionName, "unsupported value at recursive segment").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+	return reflect.Value{}
 }
 
-func (n *Object) selectorGetLoop(dataKind string, selectorSlice reflect.Value, recursiveSegment *path.CollectionMemberSegment, currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) (reflect.Value, bool, error) {
+func (n *Object) selectorGetLoop(dataKind string, selectorSlice reflect.Value, recursiveSegment *path.CollectionMemberSegment, currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "selectorGetLoop"
 	_sliceAny := make([]any, 0)
 
 	if selectorSlice.Len() == 0 {
-		return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, selector %s yielded no results", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, selector %s yielded no results", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 		if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-			return selectorSlice, true, nil
+			n.noOfResults = uint64(selectorSlice.Len())
+			return selectorSlice
 		}
 
 		recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -380,20 +395,21 @@ func (n *Object) selectorGetLoop(dataKind string, selectorSlice reflect.Value, r
 
 	newSliceResult := reflect.MakeSlice(reflect.TypeOf(_sliceAny), 0, 0)
 	for i := 0; i < selectorSlice.Len(); i++ {
-		v, ok, _ := n.recursiveGet(selectorSlice.Index(i), recursiveIndexes, append(currentPath, recursiveSegment))
-		if ok {
+		if v := n.recursiveGet(selectorSlice.Index(i), recursiveIndexes, append(currentPath, recursiveSegment)); v.IsValid() {
 			newSliceResult = n.flattenNewSliceResult(newSliceResult, currentPathSegmentIndexes, v)
 		}
 	}
 
 	if newSliceResult.Len() == 0 {
-		return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("in %s, recursively working with selector %s results yielded no ok results", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, recursively working with selector %s results yielded no ok results", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
-	return newSliceResult, true, nil
+	n.noOfResults = uint64(newSliceResult.Len())
+	return newSliceResult
 }
 
-func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) (reflect.Value, bool, error) {
+func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveDescentGet"
 
 	var valueFound reflect.Value
@@ -403,16 +419,19 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 	}
 
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		return valueFound, false, NewError(FunctionName, "currentPathSegmentIndexes exhausted").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, "currentPathSegmentIndexes exhausted").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	recursiveDescentSearchSegment := n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]
 	if recursiveDescentSearchSegment == nil {
-		return valueFound, false, NewError(FunctionName, "recursive descent search segment is not empty").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, "recursive descent search segment is not empty").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if core.IsNilOrInvalid(currentValue) {
-		return valueFound, false, NewError(FunctionName, "current value nil or invalid").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, "current value nil or invalid").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if recursiveDescentSearchSegment.IsKeyRoot {
@@ -420,7 +439,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 	}
 
 	if !recursiveDescentSearchSegment.IsKey {
-		return valueFound, false, NewError(FunctionName, fmt.Sprintf("recursive descent search segment %s is not key", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("recursive descent search segment %s is not key", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if currentValue.Kind() == reflect.Pointer || currentValue.Kind() == reflect.Interface {
@@ -453,8 +473,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 							LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 						}
 
-						recursiveDescentValue, ok, err := n.recursiveDescentGet(mapValue, recursiveDescentIndexes, nextPathSegments)
-						if ok {
+						recursiveDescentValue := n.recursiveDescentGet(mapValue, recursiveDescentIndexes, nextPathSegments)
+						if recursiveDescentValue.IsValid() {
 							if recursiveDescentValue.Kind() == reflect.Slice {
 								for i := 0; i < recursiveDescentValue.Len(); i++ {
 									valueFound = reflect.Append(valueFound, recursiveDescentValue.Index(i))
@@ -463,7 +483,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 								valueFound = reflect.Append(valueFound, recursiveDescentValue)
 							}
 						} else {
-							return valueFound, false, err
+							n.noOfResults = uint64(valueFound.Len())
+							return valueFound
 						}
 					}
 				} else {
@@ -474,8 +495,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 						LastCollection:    currentPathSegmentIndexes.LastCollection,
 					}
 
-					recursiveValue, ok, err := n.recursiveGet(mapValue, recursiveIndexes, nextPathSegments)
-					if ok {
+					recursiveValue := n.recursiveGet(mapValue, recursiveIndexes, nextPathSegments)
+					if recursiveValue.IsValid() {
 						if recursiveValue.Kind() == reflect.Slice || recursiveValue.Kind() == reflect.Array {
 							for i := 0; i < recursiveValue.Len(); i++ {
 								valueFound = reflect.Append(valueFound, recursiveValue.Index(i))
@@ -484,13 +505,14 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 							valueFound = reflect.Append(valueFound, recursiveValue)
 						}
 					} else {
-						return valueFound, false, err
+						n.noOfResults = uint64(valueFound.Len())
+						return valueFound
 					}
 				}
 			}
 
-			recursiveDescentValue, ok, _ := n.recursiveDescentGet(mapValue, currentPathSegmentIndexes, nextPathSegments)
-			if ok {
+			recursiveDescentValue := n.recursiveDescentGet(mapValue, currentPathSegmentIndexes, nextPathSegments)
+			if recursiveDescentValue.IsValid() {
 				if recursiveDescentValue.Kind() == reflect.Slice {
 					for i := 0; i < recursiveDescentValue.Len(); i++ {
 						valueFound = reflect.Append(valueFound, recursiveDescentValue.Index(i))
@@ -507,8 +529,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 				continue
 			}
 
-			recursiveDescentValue, ok, _ := n.recursiveDescentGet(sliceArrayValue, currentPathSegmentIndexes, append(currentPath, &path.CollectionMemberSegment{IsIndex: true, Index: i}))
-			if ok {
+			recursiveDescentValue := n.recursiveDescentGet(sliceArrayValue, currentPathSegmentIndexes, append(currentPath, &path.CollectionMemberSegment{IsIndex: true, Index: i}))
+			if recursiveDescentValue.IsValid() {
 				if recursiveDescentValue.Kind() == reflect.Slice {
 					for i := 0; i < recursiveDescentValue.Len(); i++ {
 						valueFound = reflect.Append(valueFound, recursiveDescentValue.Index(i))
@@ -533,8 +555,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 							LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 						}
 
-						recursiveDescentValue, ok, err := n.recursiveDescentGet(structFieldValue, recursiveDescentIndexes, nextPathSegments)
-						if ok {
+						recursiveDescentValue := n.recursiveDescentGet(structFieldValue, recursiveDescentIndexes, nextPathSegments)
+						if recursiveDescentValue.IsValid() {
 							if recursiveDescentValue.Kind() == reflect.Slice {
 								for i := 0; i < recursiveDescentValue.Len(); i++ {
 									valueFound = reflect.Append(valueFound, recursiveDescentValue.Index(i))
@@ -543,7 +565,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 								valueFound = reflect.Append(valueFound, recursiveDescentValue)
 							}
 						} else {
-							return valueFound, false, err
+							n.noOfResults = uint64(valueFound.Len())
+							return valueFound
 						}
 					}
 				} else {
@@ -554,8 +577,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 						LastCollection:    currentPathSegmentIndexes.LastCollection,
 					}
 
-					recursiveValue, ok, err := n.recursiveGet(structFieldValue, recursiveIndexes, nextPathSegments)
-					if ok {
+					recursiveValue := n.recursiveGet(structFieldValue, recursiveIndexes, nextPathSegments)
+					if recursiveValue.IsValid() {
 						if recursiveValue.Kind() == reflect.Slice || recursiveValue.Kind() == reflect.Array {
 							for i := 0; i < recursiveValue.Len(); i++ {
 								valueFound = reflect.Append(valueFound, recursiveValue.Index(i))
@@ -564,7 +587,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 							valueFound = reflect.Append(valueFound, recursiveValue)
 						}
 					} else {
-						return valueFound, false, err
+						n.noOfResults = uint64(valueFound.Len())
+						return valueFound
 					}
 				}
 			}
@@ -580,8 +604,8 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 				continue
 			}
 
-			recursiveDescentValue, ok, err := n.recursiveDescentGet(structFieldValue, currentPathSegmentIndexes, append(currentPath, &path.CollectionMemberSegment{IsKey: true, Key: currentValue.Type().Field(i).Name}))
-			if ok && err == nil {
+			recursiveDescentValue := n.recursiveDescentGet(structFieldValue, currentPathSegmentIndexes, append(currentPath, &path.CollectionMemberSegment{IsKey: true, Key: currentValue.Type().Field(i).Name}))
+			if recursiveDescentValue.IsValid() {
 				if recursiveDescentValue.Kind() == reflect.Slice {
 					for i := 0; i < recursiveDescentValue.Len(); i++ {
 						valueFound = reflect.Append(valueFound, recursiveDescentValue.Index(i))
@@ -592,14 +616,17 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 			}
 		}
 	} else {
-		return valueFound, false, NewError(FunctionName, fmt.Sprintf("unsupported value at recursive descent search segment %s", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("unsupported value at recursive descent search segment %s", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		return reflect.Value{}
 	}
 
 	if valueFound.Len() == 0 {
-		return reflect.Value{}, false, NewError(FunctionName, fmt.Sprintf("no search value found at recursive descent search segment %s", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrObjectError)
+		n.lastError = NewError(FunctionName, fmt.Sprintf("no search value found at recursive descent search segment %s", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrObjectError)
+		return reflect.Value{}
 	}
 
-	return valueFound, true, nil
+	n.noOfResults = uint64(valueFound.Len())
+	return valueFound
 }
 
 // convert nested slice result v from recursiveGet into a single 1D slice if the next pathSegment contains CollectionMemberSegment.IsKeyIndexAll, CollectionMemberSegment.UnionSelector, or CollectionMemberSegment.LinearCollectionSelector.

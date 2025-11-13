@@ -22,7 +22,7 @@ Returns the number of modifications made through deletion and the last error enc
 func (n *Object) Delete(jsonPath path.JSONPath) (uint64, error) {
 	const FunctionName = "Delete"
 
-	n.noOfModifications = 0
+	n.noOfResults = 0
 	n.lastError = nil
 
 	if jsonPath == "$" || jsonPath == "" {
@@ -51,10 +51,10 @@ func (n *Object) Delete(jsonPath path.JSONPath) (uint64, error) {
 		n.source = n.recursiveDescentDelete(n.source, currentPathSegmentIndexes, make(path.RecursiveDescentSegment, 0))
 	}
 
-	if n.noOfModifications > 0 {
-		return n.noOfModifications, nil
+	if n.noOfResults > 0 {
+		return n.noOfResults, nil
 	}
-	return n.noOfModifications, n.lastError
+	return n.noOfResults, n.lastError
 }
 
 func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
@@ -122,7 +122,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						currentValue.SetMapIndex(mapKeyR, reflect.Value{})
-						n.noOfModifications++
+						n.noOfResults++
 					} else {
 						recursiveDescentIndexes := internal.PathSegmentsIndexes{
 							CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
@@ -156,7 +156,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						currentValue.SetMapIndex(mapKey, reflect.Value{})
-						n.noOfModifications++
+						n.noOfResults++
 						continue
 					}
 
@@ -203,7 +203,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						currentValue.SetMapIndex(mapKeyR, reflect.Value{})
-						n.noOfModifications++
+						n.noOfResults++
 						continue
 					}
 
@@ -255,7 +255,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 								}
 								currentValue = newSlice
 							}
-							n.noOfModifications++
+							n.noOfResults++
 						} else {
 							recursiveDescentIndexes := internal.PathSegmentsIndexes{
 								CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
@@ -287,7 +287,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				} else {
 					currentValue = reflect.MakeSlice(currentValue.Type(), 0, 0)
 				}
-				n.noOfModifications++
+				n.noOfResults++
 			} else {
 				for i := 0; i < currentValue.Len(); i++ {
 					arraySliceValue := currentValue.Index(i)
@@ -334,7 +334,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 					if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 						if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 							arraySliceValue.Set(reflect.Zero(arraySliceType))
-							n.noOfModifications++
+							n.noOfResults++
 							continue
 						}
 
@@ -444,7 +444,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 						if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 							if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 								valueFromSliceArray.Set(reflect.Zero(arraySliceType))
-								n.noOfModifications++
+								n.noOfResults++
 								continue
 							}
 
@@ -538,7 +538,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 					if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 						if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 							structFieldValue.Set(reflect.Zero(structFieldValue.Type()))
-							n.noOfModifications++
+							n.noOfResults++
 						} else {
 							recursiveDescentIndexes := internal.PathSegmentsIndexes{
 								CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
@@ -574,7 +574,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						structField.Set(reflect.Zero(structField.Type()))
-						n.noOfModifications++
+						n.noOfResults++
 						continue
 					}
 
@@ -614,7 +614,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						structFieldValue.Set(reflect.Zero(structFieldValue.Type()))
-						n.noOfModifications++
+						n.noOfResults++
 						continue
 					}
 
@@ -704,7 +704,7 @@ func (n *Object) recursiveDescentDelete(currentValue reflect.Value, currentPathS
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						currentValue.SetMapIndex(mapKey, reflect.Value{})
-						n.noOfModifications++
+						n.noOfResults++
 					} else {
 						recursiveDescentIndexes := internal.PathSegmentsIndexes{
 							CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
@@ -750,7 +750,7 @@ func (n *Object) recursiveDescentDelete(currentValue reflect.Value, currentPathS
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						structFieldValue.Set(reflect.Zero(structFieldValue.Type()))
-						n.noOfModifications++
+						n.noOfResults++
 					} else {
 						recursiveDescentIndexes := internal.PathSegmentsIndexes{
 							CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
