@@ -14,7 +14,9 @@ func (n *Deserialization) deserializeWithDynamicSchemaNode(source reflect.Value,
 
 	if core.IsNilOrInvalid(source) {
 		if !schema.Nilable {
-			return reflect.Value{}, NewError(FunctionName, "source cannot be nil").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+			return reflect.Value{}, NewError().WithFunctionName(FunctionName).WithMessage("source cannot be nil").
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Source": source.Interface(), "PathSegments": pathSegments})
 		}
 		return reflect.ValueOf(schema.DefaultValue), nil
 	}
@@ -47,7 +49,9 @@ func (n *Deserialization) deserializeWithDynamicSchema(source reflect.Value, sch
 	}
 
 	if len(schema.Nodes) == 0 {
-		return reflect.Value{}, NewError(FunctionName, "no schema nodes found").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataDeserializationFailed)
+		return reflect.Value{}, NewError().WithFunctionName(FunctionName).WithMessage("no schema nodes found").
+			WithNestedError(ErrDataDeserializationFailed).
+			WithData(core.JsonObject{"Schema": schema, "Source": source.Interface(), "PathSegments": pathSegments})
 	}
 
 	var lastSchemaNodeErr error
@@ -75,7 +79,9 @@ func (n *Deserialization) deserialize(source reflect.Value, schema Schema, pathS
 	case *DynamicSchemaNode:
 		return n.deserializeWithDynamicSchemaNode(source, s, pathSegments)
 	default:
-		return reflect.Value{}, NewError(FunctionName, "unsupported schema type").WithSchema(schema).WithData(source.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataDeserializationFailed)
+		return reflect.Value{}, NewError().WithFunctionName(FunctionName).WithMessage("unsupported schema type").
+			WithNestedError(ErrDataDeserializationFailed).
+			WithData(core.JsonObject{"Schema": schema, "Source": source.Interface(), "PathSegments": pathSegments})
 	}
 }
 
@@ -93,12 +99,16 @@ func (n *Deserialization) deserializeDeserializedData(deserializedData any, data
 		dest := reflect.ValueOf(destination)
 		if result.Kind() != reflect.Pointer {
 			if result.Type() != dest.Elem().Type() && dest.Elem().Kind() != reflect.Interface {
-				return NewError(FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
+				return NewError().WithFunctionName(FunctionName).WithMessage("destination and result type mismatch").
+					WithNestedError(ErrDataDeserializationFailed).
+					WithData(core.JsonObject{"Schema": schema, "Source": data})
 			}
 			dest.Elem().Set(result)
 		} else {
 			if result.Elem().Type() != dest.Elem().Type() {
-				return NewError(FunctionName, "destination and result type mismatch").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
+				return NewError().WithFunctionName(FunctionName).WithMessage("destination and result type mismatch").
+					WithNestedError(ErrDataDeserializationFailed).
+					WithData(core.JsonObject{"Schema": schema, "Source": data})
 			}
 			dest.Elem().Set(result.Elem())
 		}
@@ -111,12 +121,16 @@ func (n *Deserialization) FromYAML(data []byte, schema Schema, destination any) 
 	const FunctionName = "FromYAML"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
+		return NewError().WithFunctionName(FunctionName).WithMessage("destination is not a pointer").
+			WithNestedError(ErrDataDeserializationFailed).
+			WithData(core.JsonObject{"Schema": schema, "Source": data})
 	}
 
 	var deserializedData interface{}
 	if err := yaml.Unmarshal(data, &deserializedData); err != nil {
-		return NewError(FunctionName, "Unmarshal from Yaml failed").WithSchema(schema).WithData(data).WithNestedError(err)
+		return NewError().WithFunctionName(FunctionName).WithMessage("Unmarshal from YAML failed").
+			WithNestedError(err).
+			WithData(core.JsonObject{"Schema": schema, "Source": data})
 	}
 
 	return n.deserializeDeserializedData(deserializedData, string(data), schema, destination)
@@ -126,12 +140,16 @@ func (n *Deserialization) FromJSON(data []byte, schema Schema, destination any) 
 	const FunctionName = "FromJSON"
 
 	if reflect.ValueOf(destination).Kind() != reflect.Ptr {
-		return NewError(FunctionName, "destination is not a pointer").WithSchema(schema).WithData(data).WithNestedError(ErrDataDeserializationFailed)
+		return NewError().WithFunctionName(FunctionName).WithMessage("destination is not a pointer").
+			WithNestedError(ErrDataDeserializationFailed).
+			WithData(core.JsonObject{"Schema": schema, "Source": data})
 	}
 
 	var deserializedData interface{}
 	if err := json.Unmarshal(data, &deserializedData); err != nil {
-		return NewError(FunctionName, "Unmarshal from JSON failed").WithSchema(schema).WithData(data).WithNestedError(err)
+		return NewError().WithFunctionName(FunctionName).WithMessage("Unmarshal from JSON failed").
+			WithNestedError(err).
+			WithData(core.JsonObject{"Schema": schema, "Source": data})
 	}
 
 	return n.deserializeDeserializedData(deserializedData, string(data), schema, destination)

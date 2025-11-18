@@ -34,11 +34,11 @@ func (n *Object) Get(jsonPath path.JSONPath) (uint64, error) {
 		LastRecursive: len(n.recursiveDescentSegments) - 1,
 	}
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive {
-		return 0, NewError(FunctionName, "recursiveDescentSegments empty").WithData(n.source.Interface()).WithNestedError(ErrPathSegmentInvalidError)
+		return 0, NewError().WithFunctionName(FunctionName).WithMessage("recursiveDescentSegments empty").WithNestedError(ErrPathSegmentInvalidError).WithData(core.JsonObject{"Source": n.source.Interface()})
 	}
 	currentPathSegmentIndexes.LastCollection = len(n.recursiveDescentSegments[0]) - 1
 	if currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		return 0, NewError(FunctionName, "recursiveDescentSegments empty").WithData(n.source.Interface()).WithNestedError(ErrPathSegmentInvalidError)
+		return 0, NewError().WithFunctionName(FunctionName).WithMessage("recursiveDescentSegments empty").WithNestedError(ErrPathSegmentInvalidError).WithData(core.JsonObject{"Source": n.source.Interface()})
 	}
 
 	if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
@@ -57,18 +57,24 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 	const FunctionName = "recursiveGet"
 
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		n.lastError = NewError(FunctionName, "currentPathSegmentIndexes empty").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("currentPathSegmentIndexes empty").
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
 	recursiveSegment := n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]
 	if recursiveSegment == nil {
-		n.lastError = NewError(FunctionName, "recursiveSegment is nil").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("recursiveSegment is nil").
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
 	if core.IsNilOrInvalid(currentValue) {
-		n.lastError = NewError(FunctionName, "value nil or invalid").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("value nil or invalid").
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -107,7 +113,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 		if recursiveSegment.IsKey {
 			var mapKey any
 			if err := n.defaultConverter.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
-				n.lastError = NewError(FunctionName, fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(err)
+				n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).
+					WithNestedError(err).
+					WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 				return reflect.Value{}
 			}
 
@@ -118,7 +126,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 						n.noOfResults++
 						return mapValue
 					}
-					n.lastError = NewError(FunctionName, fmt.Sprintf("value of map entry %s not valid", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("value of map entry %s not valid", recursiveSegment)).
+						WithNestedError(ErrValueAtPathSegmentInvalidError).
+						WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 					return reflect.Value{}
 				}
 
@@ -159,7 +169,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 
 					var mapKey any
 					if err := n.defaultConverter.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
-						n.lastError = NewError(FunctionName, fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(err)
+						n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).
+							WithNestedError(err).
+							WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 						return reflect.Value{}
 					}
 
@@ -172,7 +184,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 			return n.selectorGetLoop(dataKind, selectorSlice, recursiveSegment, currentValue, currentPathSegmentIndexes, currentPath)
 		}
 
-		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -181,7 +195,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 
 		if recursiveSegment.IsIndex {
 			if recursiveSegment.Index >= currentValue.Len() {
-				n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, index %s out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+				n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, index %s out of range", dataKind, recursiveSegment)).
+					WithNestedError(ErrValueAtPathSegmentInvalidError).
+					WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 				return reflect.Value{}
 			}
 
@@ -192,7 +208,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 						n.noOfResults++
 						return arraySliceValue
 					}
-					n.lastError = NewError(FunctionName, fmt.Sprintf("value in %s at index %s not valid", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("value in %s at index %s not valid", dataKind, recursiveSegment)).
+						WithNestedError(ErrValueAtPathSegmentInvalidError).
+						WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 					return reflect.Value{}
 				}
 
@@ -240,7 +258,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				start := 0
 				if recursiveSegment.LinearCollectionSelector.IsStart {
 					if recursiveSegment.LinearCollectionSelector.Start >= currentValue.Len() {
-						n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s Start is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, linear collection selector %s Start is out of range", dataKind, recursiveSegment)).
+							WithNestedError(ErrPathSegmentInvalidError).
+							WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 						return reflect.Value{}
 					}
 					start = recursiveSegment.LinearCollectionSelector.Start
@@ -248,7 +268,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				step := 1
 				if recursiveSegment.LinearCollectionSelector.IsStep {
 					if recursiveSegment.LinearCollectionSelector.Step >= currentValue.Len() {
-						n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s Step is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, linear collection selector %s Step is out of range", dataKind, recursiveSegment)).
+							WithNestedError(ErrPathSegmentInvalidError).
+							WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 						return reflect.Value{}
 					}
 					if recursiveSegment.LinearCollectionSelector.Step > 0 {
@@ -258,7 +280,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 				end := currentValue.Len()
 				if recursiveSegment.LinearCollectionSelector.IsEnd {
 					if recursiveSegment.LinearCollectionSelector.End >= end {
-						n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, linear collection selector %s End is out of range", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+						n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, linear collection selector %s End is out of range", dataKind, recursiveSegment)).
+							WithNestedError(ErrPathSegmentInvalidError).
+							WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 						return reflect.Value{}
 					}
 					end = recursiveSegment.LinearCollectionSelector.End
@@ -278,7 +302,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 			return n.selectorGetLoop(dataKind, selectorSlice, recursiveSegment, currentValue, currentPathSegmentIndexes, currentPath)
 		}
 
-		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -287,7 +313,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 
 		if recursiveSegment.IsKey {
 			if !core.StartsWithCapital(recursiveSegment.Key) {
-				n.lastError = NewError(FunctionName, fmt.Sprintf("key %s is not valid for struct", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+				n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("key %s is not valid for struct", recursiveSegment)).
+					WithNestedError(ErrPathSegmentInvalidError).
+					WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 				return reflect.Value{}
 			}
 
@@ -298,7 +326,9 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 						n.noOfResults++
 						return structFieldValue
 					}
-					n.lastError = NewError(FunctionName, fmt.Sprintf("value of field %s in struc is not valid", recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+					n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("value of field %s in struct is not valid", recursiveSegment)).
+						WithNestedError(ErrValueAtPathSegmentInvalidError).
+						WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 					return reflect.Value{}
 				}
 
@@ -353,11 +383,15 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 			return n.selectorGetLoop(dataKind, selectorSlice, recursiveSegment, currentValue, currentPathSegmentIndexes, currentPath)
 		}
 
-		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, unsupported recursive segment %s", dataKind, recursiveSegment)).
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
-	n.lastError = NewError(FunctionName, "unsupported value at recursive segment").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+	n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("unsupported value at recursive segment").
+		WithNestedError(ErrValueAtPathSegmentInvalidError).
+		WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 	return reflect.Value{}
 }
 
@@ -366,7 +400,9 @@ func (n *Object) selectorGetLoop(dataKind string, selectorSlice reflect.Value, r
 	_sliceAny := make([]any, 0)
 
 	if selectorSlice.Len() == 0 {
-		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, selector %s yielded no results", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, selector %s yielded no results", dataKind, recursiveSegment)).
+			WithNestedError(ErrValueAtPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -401,7 +437,9 @@ func (n *Object) selectorGetLoop(dataKind string, selectorSlice reflect.Value, r
 	}
 
 	if newSliceResult.Len() == 0 {
-		n.lastError = NewError(FunctionName, fmt.Sprintf("in %s, recursively working with selector %s results yielded no ok results", dataKind, recursiveSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in %s, recursively working with selector %s results yielded no ok results", dataKind, recursiveSegment)).
+			WithNestedError(ErrValueAtPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -419,18 +457,24 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 	}
 
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
-		n.lastError = NewError(FunctionName, "currentPathSegmentIndexes exhausted").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("currentPathSegmentIndexes exhausted").
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
 	recursiveDescentSearchSegment := n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive][currentPathSegmentIndexes.CurrentCollection]
 	if recursiveDescentSearchSegment == nil {
-		n.lastError = NewError(FunctionName, "recursive descent search segment is not empty").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("recursive descent search segment is not empty").
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
 	if core.IsNilOrInvalid(currentValue) {
-		n.lastError = NewError(FunctionName, "current value nil or invalid").WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("current value nil or invalid").
+			WithNestedError(ErrValueAtPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -439,7 +483,9 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 	}
 
 	if !recursiveDescentSearchSegment.IsKey {
-		n.lastError = NewError(FunctionName, fmt.Sprintf("recursive descent search segment %s is not key", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("recursive descent search segment %s is not key", recursiveDescentSearchSegment)).
+			WithNestedError(ErrPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -616,12 +662,16 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 			}
 		}
 	} else {
-		n.lastError = NewError(FunctionName, fmt.Sprintf("unsupported value at recursive descent search segment %s", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrValueAtPathSegmentInvalidError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("unsupported value at recursive descent search segment %s", recursiveDescentSearchSegment)).
+			WithNestedError(ErrValueAtPathSegmentInvalidError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
 	if valueFound.Len() == 0 {
-		n.lastError = NewError(FunctionName, fmt.Sprintf("no search value found at recursive descent search segment %s", recursiveDescentSearchSegment)).WithData(currentValue.Interface()).WithPathSegments(currentPath).WithNestedError(ErrObjectError)
+		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("no search value found at recursive descent search segment %s", recursiveDescentSearchSegment)).
+			WithNestedError(ErrObjectError).
+			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 

@@ -2,12 +2,16 @@ package core
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"reflect"
 	"unicode"
 )
 
-// StartsWithCapital Checks if a string starts with a capital letter.
+/*
+StartsWithCapital Checks if a string starts with a capital letter.
+
+Used in checking if a path.JSONPath segment key begins with a capital letter (for struct field access).
+*/
 func StartsWithCapital(s string) bool {
 	if len(s) == 0 {
 		return false
@@ -16,7 +20,9 @@ func StartsWithCapital(s string) bool {
 	return unicode.IsUpper(firstChar)
 }
 
-// IsStructFieldExported Checks if field is exported.
+/*
+IsStructFieldExported Checks if field is exported.
+*/
 func IsStructFieldExported(field reflect.StructField) bool {
 	// A simpler, more common way to check is to look at the first character.
 	// We check if the name is not empty to avoid a panic.
@@ -26,7 +32,9 @@ func IsStructFieldExported(field reflect.StructField) bool {
 	return false
 }
 
-// IsNilOrInvalid Checks if v is valid or nil depending on the type.
+/*
+IsNilOrInvalid Checks if v is valid or nil depending on the type.
+*/
 func IsNilOrInvalid(v reflect.Value) bool {
 	// 1. Check if the value is valid. This is always safe.
 	if !v.IsValid() {
@@ -44,12 +52,14 @@ func IsNilOrInvalid(v reflect.Value) bool {
 	}
 }
 
-// JsonStringifyMust Attempt to stringify value.
-//
-// Arguments:
-//   - value - Must be a pointer to data.
-//
-// Returns json representation of data if successful else value as is.
+/*
+JsonStringifyMust Attempt to stringify value.
+
+Arguments:
+  - value - Must be a pointer to data.
+
+Returns json representation of data if successful else value as is.
+*/
 func JsonStringifyMust(value any) any {
 	if reflect.ValueOf(value).Kind() == reflect.Ptr {
 		if jsonData, err := json.Marshal(value); err == nil {
@@ -64,21 +74,23 @@ func JsonStringifyMust(value any) any {
 	return value
 }
 
-// Ptr Returns pointer to data.
-//
-// Useful for functions that require pointers to data.
+/*
+Ptr Returns pointer to v.
+*/
 func Ptr[T any](v T) *T {
 	return &v
 }
 
-// As cast value to T.
-//
-// Useful for quick cast tests with errors.
+/*
+As cast value to T.
+
+Return successful cast or zero value of T with error indicating the attempted type to cast to.
+*/
 func As[T any](value any) (T, error) {
 	if valueT, ok := value.(T); ok {
 		return valueT, nil
 	}
 
 	var zero T
-	return zero, errors.New("cast failed")
+	return zero, fmt.Errorf("cast to %T failed", zero)
 }

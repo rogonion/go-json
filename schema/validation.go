@@ -13,17 +13,23 @@ func (n *Validation) validateDataWithDynamicSchemaNodeStruct(data reflect.Value,
 
 	if core.IsNilOrInvalid(data) {
 		if !schema.Nilable {
-			return false, NewError(FunctionName, "data cannot be nil").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("data cannot be nil").
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 		}
 		return true, nil
 	}
 
 	if data.Kind() != reflect.Struct {
-		return false, NewError(FunctionName, "data.Kind() is not a struct").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage("data.Kind() is not a struct").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	if len(schema.ChildNodes) == 0 {
-		return false, NewError(FunctionName, "no schema for properties in in data struct found").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage("no schema for properties in in data struct found").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	childSchemaNodesValidated := make([]string, 0)
@@ -43,7 +49,9 @@ func (n *Validation) validateDataWithDynamicSchemaNodeStruct(data reflect.Value,
 	}
 
 	if len(childSchemaNodesValidated) != len(schema.ChildNodes) && schema.ChildNodesMustBeValid {
-		return false, NewError(FunctionName, "not all child nodes are present and validated against").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage("not all child nodes are present and validated against").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	return true, nil
@@ -54,13 +62,17 @@ func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, sc
 
 	if core.IsNilOrInvalid(data) {
 		if !schema.Nilable {
-			return false, NewError(FunctionName, "data cannot be nil").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("data cannot be nil").
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 		}
 		return true, nil
 	}
 
 	if data.Kind() != reflect.Map {
-		return false, NewError(FunctionName, "data.Kind() is not map").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage("data.Kind() is not map").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	if len(schema.ChildNodes) > 0 || (schema.ChildNodesAssociativeCollectionEntriesKeySchema != nil && schema.ChildNodesAssociativeCollectionEntriesValueSchema != nil) {
@@ -82,10 +94,14 @@ func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, sc
 							}
 						}
 						if len(cs.ValidSchemaNodeKeys) == 0 {
-							return false, NewError(FunctionName, fmt.Sprintf("map entry with key %s not valid against any DynamicSchema nodes", key.String())).WithSchema(cs).WithData(childMapValue.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+							return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("map entry with key %s not valid against any DynamicSchema nodes", key.String())).
+								WithNestedError(ErrDataValidationAgainstSchemaFailed).
+								WithData(core.JsonObject{"Schema": (cs), "Data": childMapValue.Interface(), "PathSegments": currentPathSegments})
 						}
 					} else {
-						return false, NewError(FunctionName, fmt.Sprintf("no DynamicSchema nodes found for key %s", key.String())).WithSchema(cs).WithData(childMapValue.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+						return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("no DynamicSchema nodes found for key %s", key.String())).
+							WithNestedError(ErrDataValidationAgainstSchemaFailed).
+							WithData(core.JsonObject{"Schema": (cs), "Data": childMapValue.Interface(), "PathSegments": currentPathSegments})
 					}
 				case *DynamicSchemaNode:
 					if childSchemaKeyValid, _ := n.validateData(key, cs.AssociativeCollectionEntryKeySchema, currentPathSegments); childSchemaKeyValid {
@@ -93,11 +109,17 @@ func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, sc
 						if childValueSchemaValid, _ := n.validateDataWithDynamicSchemaNode(childMapValue, cs, currentPathSegments); childValueSchemaValid {
 							break
 						}
-						return false, NewError(FunctionName, fmt.Sprintf("Value for map key %s not valid against schema", key.String())).WithSchema(cs).WithData(childMapValue.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+						return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("Value for map key %s not valid against schema", key.String())).
+							WithNestedError(ErrDataValidationAgainstSchemaFailed).
+							WithData(core.JsonObject{"Schema": (cs), "Data": data.Interface(), "PathSegments": currentPathSegments})
 					}
-					return false, NewError(FunctionName, fmt.Sprintf("Key for map key %s not valid against schema", key.String())).WithSchema(cs).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+					return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("Key for map key %s not valid against schema", key.String())).
+						WithNestedError(ErrDataValidationAgainstSchemaFailed).
+						WithData(core.JsonObject{"Schema": (cs), "Data": data.Interface(), "PathSegments": currentPathSegments})
 				default:
-					return false, NewError(FunctionName, fmt.Sprintf("Unsupported schema type for map key %s", key.String())).WithSchema(childSchema).WithData(data.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+					return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("Unsupported schema type for map key %s", key.String())).
+						WithNestedError(ErrDataValidationAgainstSchemaFailed).
+						WithData(core.JsonObject{"Schema": (childSchema), "Data": data.Interface(), "PathSegments": currentPathSegments})
 				}
 
 				childSchemaNodesValidated = append(childSchemaNodesValidated, key.String())
@@ -110,22 +132,33 @@ func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, sc
 					if childValueSchemaValid, _ := n.validateData(childMapValue, schema.ChildNodesAssociativeCollectionEntriesValueSchema, currentPathSegments); childValueSchemaValid {
 						continue
 					}
-					return false, NewError(FunctionName, fmt.Sprintf("Value for map key %s not valid against schema", key.String())).WithSchema(schema.ChildNodesAssociativeCollectionEntriesValueSchema).WithData(childMapValue.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+					return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("Value for map key %s not valid against schema", key.String())).
+						WithNestedError(ErrDataValidationAgainstSchemaFailed).
+						WithData(core.JsonObject{"Schema": (schema.ChildNodesAssociativeCollectionEntriesValueSchema), "Data": data.Interface(), "PathSegments": currentPathSegments})
 				}
-				return false, NewError(FunctionName, fmt.Sprintf("Key for map key %s not valid against schema", key.String())).WithSchema(schema.ChildNodesAssociativeCollectionEntriesKeySchema).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+
+				return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("Key for map key %s not valid against schema", key.String())).
+					WithNestedError(ErrDataValidationAgainstSchemaFailed).
+					WithData(core.JsonObject{"Schema": (schema.ChildNodesAssociativeCollectionEntriesKeySchema), "Data": data.Interface(), "PathSegments": currentPathSegments})
 			}
 
-			return false, NewError(FunctionName, fmt.Sprintf("SchemaManip for map key %s not found", key.String())).WithSchema(schema).WithData(data.Interface()).WithPathSegments(currentPathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("SchemaManip for map key %s not found", key.String())).
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": currentPathSegments})
 		}
 
 		if len(childSchemaNodesValidated) != len(schema.ChildNodes) && schema.ChildNodesMustBeValid {
-			return false, NewError(FunctionName, "not all child nodes are present and validated against").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("not all child nodes are present and validated against").
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 		}
 
 		return true, nil
 	}
 
-	return false, NewError(FunctionName, "no schema to validate entries in data (map) found").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+	return false, NewError().WithFunctionName(FunctionName).WithMessage("no schema to validate entries in data (map) found").
+		WithNestedError(ErrDataValidationAgainstSchemaFailed).
+		WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 }
 
 func (n *Validation) validateDataWithDynamicSchemaNodeArraySlice(data reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (bool, error) {
@@ -133,13 +166,17 @@ func (n *Validation) validateDataWithDynamicSchemaNodeArraySlice(data reflect.Va
 
 	if core.IsNilOrInvalid(data) {
 		if !schema.Nilable {
-			return false, NewError(FunctionName, "data cannot be nil").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("data cannot be nil").
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 		}
 		return true, nil
 	}
 
 	if data.Kind() != reflect.Slice && data.Kind() != reflect.Array {
-		return false, NewError(FunctionName, "data.Kind() is not slice or array").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage("data.Kind() is not slice or array").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	if schema.ChildNodesLinearCollectionElementsSchema != nil {
@@ -154,7 +191,9 @@ func (n *Validation) validateDataWithDynamicSchemaNodeArraySlice(data reflect.Va
 		return true, nil
 	}
 
-	return false, NewError(FunctionName, "schema to validate element(s) in data (slice/array) not found").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+	return false, NewError().WithFunctionName(FunctionName).WithMessage("schema to validate element(s) in data (slice/array) not found").
+		WithNestedError(ErrDataValidationAgainstSchemaFailed).
+		WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 }
 
 func (n *Validation) validateDataWithDynamicSchemaNodePointer(data reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (bool, error) {
@@ -162,13 +201,16 @@ func (n *Validation) validateDataWithDynamicSchemaNodePointer(data reflect.Value
 
 	if core.IsNilOrInvalid(data) {
 		if !schema.Nilable {
-			return false, NewError(FunctionName, "data cannot be nil").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("data cannot be nil").
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 		}
 		return true, nil
 	}
 
 	if schema.ChildNodesPointerSchema == nil {
-		return true, NewError(FunctionName, "schema for value that data (pointer) points to has not been set (schema.ChildNodesPointerSchema is nil)").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+		return true, NewError().WithFunctionName(FunctionName).WithMessage("schema for value that data (pointer) points to has not been set (schema.ChildNodesPointerSchema is nil)").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	return n.validateData(data.Elem(), schema.ChildNodesPointerSchema, pathSegments)
@@ -179,7 +221,9 @@ func (n *Validation) validateDataWithDynamicSchemaNode(data reflect.Value, schem
 
 	if core.IsNilOrInvalid(data) {
 		if !schema.Nilable {
-			return false, NewError(FunctionName, "data cannot be nil").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("data cannot be nil").
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 		}
 	}
 
@@ -188,7 +232,9 @@ func (n *Validation) validateDataWithDynamicSchemaNode(data reflect.Value, schem
 	}
 
 	if data.Kind() != schema.Kind {
-		return false, NewError(FunctionName, "data.Kind is not valid").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage("data.Kind is not valid").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	if schema.Validator != nil {
@@ -210,7 +256,9 @@ func (n *Validation) validateDataWithDynamicSchemaNode(data reflect.Value, schem
 		return n.validateDataWithDynamicSchemaNodeStruct(data, schema, pathSegments)
 	default:
 		if data.Type() != schema.Type {
-			return false, NewError(FunctionName, "data.Type is not valid").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("data.Type is not valid").
+				WithNestedError(ErrDataValidationAgainstSchemaFailed).
+				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 		}
 		return true, nil
 	}
@@ -229,7 +277,9 @@ func (n *Validation) validateDataWithDynamicSchema(data reflect.Value, schema *D
 	}
 
 	if len(schema.Nodes) == 0 {
-		return true, NewError(FunctionName, "no schema nodes found").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+		return true, NewError().WithFunctionName(FunctionName).WithMessage("no schema nodes found").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 
 	var lastSchemaNodeErr error
@@ -265,7 +315,9 @@ func (n *Validation) validateData(data reflect.Value, schema Schema, pathSegment
 	case *DynamicSchemaNode:
 		return n.validateDataWithDynamicSchemaNode(data, s, pathSegments)
 	default:
-		return false, NewError(FunctionName, "unsupported schema type").WithSchema(schema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(ErrDataValidationAgainstSchemaFailed)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage("unsupported schema type").
+			WithNestedError(ErrDataValidationAgainstSchemaFailed).
+			WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 	}
 }
 

@@ -240,72 +240,7 @@ var (
 	ErrDataConversionFailed = errors.New("data conversion failed")
 )
 
-/*
-Error for when DataProcessor execution fails.
-*/
-type Error struct {
-	Err          error
-	FunctionName string
-	Message      string
-	PathSegments path.RecursiveDescentSegment
-	Schema       Schema
-	Data         interface{}
-}
-
-func (e *Error) Error() string {
-	var err error
-	if e.Message != "" {
-		err = errors.New(e.Message)
-	}
-	return fmt.Errorf("%w: %w", err, e.Err).Error()
-}
-
-func (e *Error) Unwrap() error {
-	return e.Err
-}
-
-func (e *Error) String() string {
-	str := e.Error()
-	if e.FunctionName != "" {
-		str = str + " \nFunctionName: " + e.FunctionName
-	}
-	str = str + "\nMessage: " + e.Message
-	if e.PathSegments != nil {
-		str = str + " \nPathSegments: " + e.PathSegments.String()
-	}
-	if e.Schema != nil {
-		str = str + " \nSchema: " + e.Schema.String()
-	}
-	if e.Data != nil {
-		str = str + fmt.Sprintf(" \nData: %+v", core.JsonStringifyMust(e.Data))
-	}
-	return str
-}
-
-func (e *Error) WithPathSegments(value path.RecursiveDescentSegment) *Error {
-	e.PathSegments = value
-	return e
-}
-
-func (e *Error) WithData(value interface{}) *Error {
-	e.Data = value
-	return e
-}
-
-func (e *Error) WithSchema(value Schema) *Error {
-	e.Schema = value
-	return e
-}
-
-func (e *Error) WithNestedError(value error) *Error {
-	e.Err = fmt.Errorf("%w: %w", ErrSchemaError, value)
-	return e
-}
-
-func NewError(functionName string, message string) *Error {
-	n := new(Error)
-	n.Err = ErrSchemaError
-	n.FunctionName = functionName
-	n.Message = message
+func NewError() *core.Error {
+	n := core.NewError().WithDefaultBaseError(ErrSchemaError)
 	return n
 }

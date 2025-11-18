@@ -463,16 +463,16 @@ func (n *Pgxuuid) Convert(data reflect.Value, currentSchema Schema, pathSegments
 		if uuidString, err := uuid.FromString(d); err == nil {
 			return reflect.ValueOf(uuidString), nil
 		} else {
-			return reflect.Value{}, NewError(FunctionName, "RecursiveConvert to uuid from string failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
+			return reflect.Value{}, NewError().WithFunctionName(FunctionName).WithMessage("RecursiveConvert to uuid from string failed").WithNestedError(err).WithData(core.JsonObject{"Schema": currentSchema, "PathSegments": pathSegments, "Data": data})
 		}
 	case []byte:
 		if uuidBytes, err := uuid.FromBytes(d); err == nil {
 			return reflect.ValueOf(uuidBytes), nil
 		} else {
-			return reflect.Value{}, NewError(FunctionName, "RecursiveConvert to uuid from bytes failed").WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments).WithNestedError(err)
+			return reflect.Value{}, NewError().WithFunctionName(FunctionName).WithMessage("RecursiveConvert to uuid from bytes failed").WithNestedError(err).WithData(core.JsonObject{"Schema": currentSchema, "PathSegments": pathSegments, "Data": data})
 		}
 	default:
-		return reflect.Value{}, NewError(FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data.Interface()).WithPathSegments(pathSegments)
+		return reflect.Value{}, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("unsupported type %T", data)).WithData(core.JsonObject{"Schema": currentSchema, "PathSegments": pathSegments, "Data": data})
 	}
 }
 
@@ -482,20 +482,20 @@ func (n *Pgxuuid) ValidateData(data any, currentSchema Schema, pathSegments path
 	switch d := data.(type) {
 	case uuid.UUID:
 		if d.IsNil() {
-			return false, NewError(FunctionName, "uuid is nil").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("uuid is nil").WithData(core.JsonObject{"Schema": currentSchema, "PathSegments": pathSegments, "Data": data})
 		}
 		return true, nil
 	case string:
 		if _, err := uuid.FromString(d); err != nil {
-			return false, NewError(FunctionName, "string not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments).WithNestedError(err)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("string not valid uuid").WithData(core.JsonObject{"Schema": currentSchema, "PathSegments": pathSegments, "Data": data})
 		}
 		return true, nil
 	case []byte:
 		if _, err := uuid.FromBytes(d); err != nil {
-			return false, NewError(FunctionName, "[]bytes not valid uuid").WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments).WithNestedError(err)
+			return false, NewError().WithFunctionName(FunctionName).WithMessage("[]bytes not valid uuid").WithData(core.JsonObject{"Schema": currentSchema, "PathSegments": pathSegments, "Data": data})
 		}
 		return true, nil
 	default:
-		return false, NewError(FunctionName, fmt.Sprintf("unsupported type %T", data)).WithSchema(currentSchema).WithData(data).WithPathSegments(pathSegments)
+		return false, NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("unsupported type %T", data)).WithData(core.JsonObject{"Schema": currentSchema, "PathSegments": pathSegments, "Data": data})
 	}
 }

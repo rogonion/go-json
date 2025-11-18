@@ -21,7 +21,7 @@ func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
 				"path=", testData.Path, "\n",
 			)
 
-			var schemaPathError *Error
+			var schemaPathError *core.Error
 			if errors.As(err, &schemaPathError) {
 				t.Error("Test Tile:", testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
@@ -41,7 +41,7 @@ func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
 		}
 
 		if err != nil && testData.LogErrorsIfExpectedNotOk {
-			var schemaError *Error
+			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
 				t.Log(
 					"-----Error Details-----", "\n",

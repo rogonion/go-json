@@ -24,7 +24,7 @@ func TestObject_Set(t *testing.T) {
 		}
 
 		if err != nil && testData.LogErrorsIfExpectedNotOk {
-			var objectProcessorError *Error
+			var objectProcessorError *core.Error
 			if errors.As(err, &objectProcessorError) {
 				t.Error("Test Tile:", testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",

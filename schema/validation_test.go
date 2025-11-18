@@ -19,7 +19,7 @@ func TestSchema_ValidateData(t *testing.T) {
 				"schema=", testData.Schema, "\n",
 				"data=", core.JsonStringifyMust(testData.Data), "\n",
 			)
-			var schemaError *Error
+			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
 				t.Error("Test Tile:", testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
@@ -30,7 +30,7 @@ func TestSchema_ValidateData(t *testing.T) {
 		}
 
 		if err != nil && testData.LogErrorsIfExpectedNotOk {
-			var schemaError *Error
+			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
 				t.Log(
 					"-----Error Details-----", "\n",
