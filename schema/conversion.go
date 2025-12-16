@@ -586,7 +586,15 @@ func (n *Conversion) convertToArraySliceWithDynamicSchemaNode(source reflect.Val
 
 			currentPathSegments := append(pathSegments, &path.CollectionMemberSegment{Index: i, IsIndex: true})
 
-			if elementResult, err := n.RecursiveConvert(source.Index(i), schema.ChildNodesLinearCollectionElementsSchema, currentPathSegments); err == nil {
+			currentSchema := schema.ChildNodesLinearCollectionElementsSchema
+
+			if len(schema.ChildNodes) > 0 {
+				if schemaForElementAtIndex, ok := schema.ChildNodes[fmt.Sprintf("%d", i)]; ok {
+					currentSchema = schemaForElementAtIndex
+				}
+			}
+
+			if elementResult, err := n.RecursiveConvert(source.Index(i), currentSchema, currentPathSegments); err == nil {
 				if elementResult.IsValid() {
 					newArraySlice.Index(i).Set(elementResult)
 				} else {

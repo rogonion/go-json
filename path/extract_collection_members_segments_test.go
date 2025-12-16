@@ -1,6 +1,7 @@
 package path
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/rogonion/go-json/core"
@@ -15,6 +16,7 @@ func TestPath_ExtractCollectionMembersSegments(t *testing.T) {
 
 		if !reflect.DeepEqual(core.JsonStringifyMust(&result), core.JsonStringifyMust(&testData.ExpectedSegments)) {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected=", core.JsonStringifyMust(testData.ExpectedSegments), "\n",
 				"got=", result, "\n",
 				"Test Data Segment=", testData.Segment,
@@ -30,8 +32,12 @@ type ExtractCollectionMemberSegmentsData struct {
 }
 
 func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionMemberSegmentsData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "storebicycle['item-code']",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -50,8 +56,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "['total.sum']",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -65,8 +75,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "$['report-data']",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -86,8 +100,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "widow[::2][4:5:]",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -117,8 +135,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "transactions[1:5:2]",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -143,8 +165,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: `preferences['theme-settings',"font-size",3]`,
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -176,8 +202,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "['1st_category']",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -191,8 +221,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "dimensions[2][3]",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -216,8 +250,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "products['item-details..']",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -236,8 +274,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "$['user info']['address.wind'][1]",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -267,8 +309,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "data[*]",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -288,8 +334,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "bicycle['item-code']",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -308,8 +358,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "book[0]",
 			ExpectedSegments: RecursiveDescentSegment{
 				{
@@ -328,8 +382,12 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Segment: "$",
 			ExpectedSegments: RecursiveDescentSegment{
 				{

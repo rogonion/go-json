@@ -2,6 +2,7 @@ package object
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -16,6 +17,7 @@ func TestObject_Get(t *testing.T) {
 		noOfResults, err := obj.Get(testData.Path)
 		if noOfResults != testData.ExpectedOk {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected ok=", testData.ExpectedOk, "got ok=", noOfResults, "\n",
 				"path=", testData.Path,
 			)
@@ -24,7 +26,8 @@ func TestObject_Get(t *testing.T) {
 		if err != nil && testData.LogErrorsIfExpectedNotOk {
 			var objectProcessorError *core.Error
 			if errors.As(err, &objectProcessorError) {
-				t.Error("Test Tile:", testData.TestTitle, "\n",
+				t.Error(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					objectProcessorError.String(), "\n",
 					"-----------------------",
@@ -35,6 +38,7 @@ func TestObject_Get(t *testing.T) {
 		valueFound := obj.GetValueFoundInterface()
 		if !reflect.DeepEqual(valueFound, testData.ExpectedValue) {
 			t.Error(
+				testData.TestTitle, "\n",
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
 				"res=", core.JsonStringifyMust(valueFound), "\n",
@@ -53,10 +57,12 @@ type GetData struct {
 }
 
 func GetTestData(yield func(data *GetData) bool) {
-	// --- Test Case 1: Complex nested path with maps and structs ---
-	// This test navigates through nested maps and structs to a specific field.
+	testCaseIndex := 1
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Complex nested path with maps and structs\nThis test navigates through nested maps and structs to a specific field.", testCaseIndex),
+			},
 			Root: map[string]any{
 				"data": map[string]any{
 					"metadata": struct {
@@ -79,10 +85,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
-	// --- Test Case 2: Recursive descent with a wildcard to get all names ---
-	// This tests if the function can find all "Name" fields regardless of nesting.
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Recursive descent with a wildcard to get all names\nThis tests if the function can find all \"Name\" fields regardless of nesting.", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{"User": User{Name: "Alice"}},
 				ComplexData{
@@ -104,10 +112,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
-	// --- Test Case 3: Union operator to get multiple fields from a single struct ---
-	// This tests the `['fieldA', 'fieldB']` operator.
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Union operator to get multiple fields from a single struct\nThis tests the `['fieldA', 'fieldB']` operator.", testCaseIndex),
+			},
 			Root: ComplexData{
 				ID: 99,
 				User: User{
@@ -124,10 +134,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
-	// --- Test Case 4: Deep path with a slice index and field extraction ---
-	// This tests a combination of operators to get a specific value from a deeply nested slice.
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Deep path with a slice index and field extraction\nThis tests a combination of operators to get a specific value from a deeply nested slice.", testCaseIndex),
+			},
 			Root: ComplexData{
 				Items: []struct {
 					Name  string
@@ -146,10 +158,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
-	// --- Test Case 5: Path that should not find a match ---
-	// This test ensures the function correctly returns false and a nil value for an invalid path.
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Path that should not find a match\nThis test ensures the function correctly returns false and a nil value for an invalid path.", testCaseIndex),
+			},
 			Root: map[string]any{
 				"store": map[string]any{"book": "fiction"},
 			},
@@ -161,8 +175,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{
 					"one": struct {
@@ -204,8 +222,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{
 					"one": struct {
@@ -247,8 +269,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{
 					"one": struct {
@@ -294,8 +320,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: map[string]any{
 				"one": []any{
 					1,
@@ -330,8 +360,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []struct {
 				Five  string
 				Six   string
@@ -358,8 +392,12 @@ func GetTestData(yield func(data *GetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: map[string]any{
 				"one": 1,
 				"two": 2,

@@ -183,7 +183,15 @@ func (n *Validation) validateDataWithDynamicSchemaNodeArraySlice(data reflect.Va
 		for i := 0; i < data.Len(); i++ {
 			currentPathSegments := append(pathSegments, &path.CollectionMemberSegment{Index: i, IsIndex: true})
 
-			if dataValidAgainstSchema, err := n.validateData(data.Index(i), schema.ChildNodesLinearCollectionElementsSchema, currentPathSegments); !dataValidAgainstSchema {
+			currentSchema := schema.ChildNodesLinearCollectionElementsSchema
+
+			if len(schema.ChildNodes) > 0 {
+				if schemaForElementAtIndex, ok := schema.ChildNodes[fmt.Sprintf("%d", i)]; ok {
+					currentSchema = schemaForElementAtIndex
+				}
+			}
+
+			if dataValidAgainstSchema, err := n.validateData(data.Index(i), currentSchema, currentPathSegments); !dataValidAgainstSchema {
 				return false, err
 			}
 		}

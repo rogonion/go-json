@@ -2,6 +2,7 @@ package object
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -17,6 +18,7 @@ func TestObject_Delete(t *testing.T) {
 		ok, err := obj.Delete(testData.Path)
 		if ok != testData.ExpectedOk {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
 				"path=", testData.Path,
 			)
@@ -25,7 +27,8 @@ func TestObject_Delete(t *testing.T) {
 		if err != nil && testData.LogErrorsIfExpectedNotOk {
 			var objectProcessorError *core.Error
 			if errors.As(err, &objectProcessorError) {
-				t.Error("Test Tile:", testData.TestTitle, "\n",
+				t.Error(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					objectProcessorError.String(), "\n",
 					"-----------------------",
@@ -35,6 +38,7 @@ func TestObject_Delete(t *testing.T) {
 
 		if !reflect.DeepEqual(obj.GetSourceInterface(), testData.ExpectedValue) {
 			t.Error(
+				testData.TestTitle, "\n",
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
 				"res=", core.JsonStringifyMust(obj.GetSourceInterface()), "\n",
@@ -53,8 +57,12 @@ type DeleteData struct {
 }
 
 func DeleteTestData(yield func(data *DeleteData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{"User": &User{Name: "Alice"}},
 				&struct {
@@ -104,8 +112,12 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{"User": &User{Name: "OneName"}},
 				&struct {
@@ -154,8 +166,13 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{"User": &User{Name: "OneName"}},
 				&struct {
@@ -204,8 +221,13 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: map[string]any{
 				"Addresses": []any{
 					nil,
@@ -272,8 +294,13 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: &ComplexData{
 				User: User{
 					Name:  "NameEmail",
@@ -290,8 +317,12 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: &[4]*Address{
 				{
 					City: "CityDouble",
@@ -322,8 +353,13 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: &ComplexData{
 				Items: []struct {
 					Name  string
@@ -351,8 +387,12 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:          map[string]any{"address": map[string]any{"address": "test"}},
 			Path:          "$.address",
 			ExpectedOk:    1,
@@ -362,8 +402,12 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:          []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 10},
 			Path:          "$.[10]",
 			ExpectedOk:    1,

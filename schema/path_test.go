@@ -2,6 +2,7 @@ package schema
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -16,6 +17,7 @@ func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
 
 		if testData.ExpectedOk && err != nil {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",
 				"schema=", testData.Schema, "\n",
 				"path=", testData.Path, "\n",
@@ -23,7 +25,8 @@ func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
 
 			var schemaPathError *core.Error
 			if errors.As(err, &schemaPathError) {
-				t.Error("Test Tile:", testData.TestTitle, "\n",
+				t.Error(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					schemaPathError.String(), "\n",
 					"-----------------------",
@@ -32,6 +35,7 @@ func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
 		} else {
 			if !reflect.DeepEqual(res, testData.ExpectedData) {
 				t.Error(
+					testData.TestTitle, "\n",
 					"expected res to be equal to testData.ExpectedData\n",
 					"schema=", testData.Schema, "\n",
 					"res", res, "\n",
@@ -44,8 +48,8 @@ func TestSchemaPath_GetSchemaAtPath(t *testing.T) {
 			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
 				t.Log(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
-					"Test Tile:", testData.TestTitle, "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
 				)
@@ -63,8 +67,12 @@ type getSchemaAtPathData struct {
 }
 
 func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     JsonMapSchema(),
 			Path:       "$.Name",
 			ExpectedOk: true,
@@ -80,8 +88,12 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     JsonMapSchema(),
 			Path:       "$.Addresses[1].Zipcode",
 			ExpectedOk: true,
@@ -93,8 +105,12 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     ShapeSchema(),
 			Path:       "$.Side",
 			ExpectedOk: true,
@@ -107,8 +123,12 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     UserWithAddressSchema(),
 			Path:       "$.Address.ZipCode",
 			ExpectedOk: true,
@@ -125,8 +145,12 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     CompanySchema(),
 			Path:       "$.Employees[2].ID",
 			ExpectedOk: true,
@@ -139,8 +163,12 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     EmployeeSchema(),
 			Path:       "$.ProjectHours['1']",
 			ExpectedOk: true,
@@ -157,8 +185,12 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     EmployeeSchema(),
 			Path:       "$.ProjectHours['1'].two",
 			ExpectedOk: true,
@@ -171,8 +203,12 @@ func getSchemaAtPathDataTestData(yield func(data *getSchemaAtPathData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&getSchemaAtPathData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     ListOfShapesSchema(),
 			Path:       "$[1].Radius",
 			ExpectedOk: true,

@@ -171,11 +171,15 @@ type DynamicSchemaNode struct {
 	Validator Validator
 
 	// A recursive map defining the schema for the following:
-	// 	- Specific key-value entries in an associative collection like map.
+	// 	- Specific key-value entries in an associative collection like reflect.Map.
 	//
-	//		For each entry, it is important to specify the key type using ChildNodesAssociativeCollectionEntriesKeySchema.
-	// 	- Specific elements at indexes in a linear collection like slice or array.
-	// 	- All struct top level members specifically those that are User defined.
+	//		For each entry, it is important to specify the key type using AssociativeCollectionEntryKeySchema.
+	// 	- Elements at specific indexes in a linear collection like reflect.Slice or reflect.Array.
+	//
+	//		For a scenario whereby linear collection is fixed and ordered.
+	// 	- All reflect.Struct top level members specifically those that are User defined.
+	//
+	// If set, ideally ensure that the parent collection is an interface or can accommodate the various collection entries' types.
 	ChildNodes ChildNodes
 
 	// Schema for what the current DynamicSchemaNode points to. Mandatory if Kind is reflect.Pointer

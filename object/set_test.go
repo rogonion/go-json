@@ -2,6 +2,7 @@ package object
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -18,6 +19,7 @@ func TestObject_Set(t *testing.T) {
 		ok, err := obj.Set(testData.Path, testData.ValueToSet)
 		if ok != testData.ExpectedOk {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
 				"path=", testData.Path,
 			)
@@ -26,7 +28,8 @@ func TestObject_Set(t *testing.T) {
 		if err != nil && testData.LogErrorsIfExpectedNotOk {
 			var objectProcessorError *core.Error
 			if errors.As(err, &objectProcessorError) {
-				t.Error("Test Tile:", testData.TestTitle, "\n",
+				t.Error(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					objectProcessorError.String(), "\n",
 					"-----------------------",
@@ -36,6 +39,7 @@ func TestObject_Set(t *testing.T) {
 
 		if !reflect.DeepEqual(obj.GetSourceInterface(), testData.ExpectedValue) {
 			t.Error(
+				testData.TestTitle, "\n",
 				"res not equal to testData.ExpectedValue\n",
 				"Path", testData.Path, "\n",
 				"res=", core.JsonStringifyMust(obj.GetSourceInterface()), "\n",
@@ -56,8 +60,12 @@ type SetData struct {
 }
 
 func SetTestData(yield func(data *SetData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:       nil,
 			Path:       "$[5].Address.ZipCode",
 			ValueToSet: "1234",
@@ -77,8 +85,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:       nil,
 			Path:       "$[10]",
 			ValueToSet: 10,
@@ -97,8 +109,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:          nil,
 			Path:          "$.Address.ZipCode",
 			ValueToSet:    "1234",
@@ -110,8 +126,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:          nil,
 			Path:          "$.ZipCode",
 			ValueToSet:    "1234",
@@ -123,8 +143,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{"User": &User{Name: "Alice"}},
 				&struct {
@@ -175,8 +199,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{"User": &User{Name: "Alice"}},
 				&struct {
@@ -226,8 +254,13 @@ func SetTestData(yield func(data *SetData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: []any{
 				map[string]any{"User": &User{Name: "Alice"}},
 				&struct {
@@ -278,8 +311,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:       nil,
 			Path:       "$.Addresses[1,4].City[5]['location','sub-location']",
 			ValueToSet: "LocationSublocation",
@@ -321,8 +358,13 @@ func SetTestData(yield func(data *SetData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:       new(ComplexData),
 			Path:       "$.User['Name','Email']",
 			ValueToSet: "NameEmail",
@@ -338,8 +380,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root: &[4]*Address{
 				{
 					City: "City0",
@@ -376,8 +422,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:       new(ComplexData),
 			Path:       "$.Items[1].Name",
 			ValueToSet: "I am User",
@@ -398,8 +448,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:          nil,
 			Path:          "$.address",
 			ValueToSet:    map[string]any{"address": "test"},
@@ -410,8 +464,12 @@ func SetTestData(yield func(data *SetData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Root:          nil,
 			Path:          "$.[10]",
 			ValueToSet:    10,

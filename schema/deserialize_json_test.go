@@ -2,6 +2,7 @@ package schema
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -17,13 +18,15 @@ func TestSchema_DeserializeFromJson(t *testing.T) {
 		err := NewDeserialization().WithCustomConverters(testData.Converters).FromJSON([]byte(testData.Source), testData.Schema, &res)
 		if testData.ExpectedOk && err != nil {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",
 				"schema=", testData.Schema, "\n",
 				"data=", core.JsonStringifyMust(testData.Source), "\n",
 			)
 			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
-				t.Error("Test Tile:", testData.TestTitle, "\n",
+				t.Error(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
@@ -32,6 +35,7 @@ func TestSchema_DeserializeFromJson(t *testing.T) {
 		} else {
 			if !reflect.DeepEqual(res, testData.ExpectedData) {
 				t.Error(
+					testData.TestTitle, "\n",
 					"expected res to be equal to testData.ExpectedData\n",
 					"schema=", testData.Schema, "\n",
 					"res", core.JsonStringifyMust(res), "\n",
@@ -44,8 +48,8 @@ func TestSchema_DeserializeFromJson(t *testing.T) {
 			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
 				t.Log(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
-					"Test Tile:", testData.TestTitle, "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
 				)
@@ -64,8 +68,12 @@ type deserializeData struct {
 }
 
 func deserializeJsonDataTestData(yield func(data *deserializeData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&deserializeData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: &DynamicSchemaNode{
 				Kind: reflect.Map,
 				Type: reflect.TypeOf(map[string]interface{}{}),
@@ -94,8 +102,12 @@ func deserializeJsonDataTestData(yield func(data *deserializeData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&deserializeData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: ListOfShapesSchema(),
 			Source: strings.TrimSpace(`
 			[
@@ -120,8 +132,12 @@ func deserializeJsonDataTestData(yield func(data *deserializeData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&deserializeData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: ListOfShapesSchema(),
 			Source: strings.TrimSpace(`
 			[
@@ -134,8 +150,12 @@ func deserializeJsonDataTestData(yield func(data *deserializeData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&deserializeData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:     UserWithUuidIdSchema(),
 			Source:     strings.TrimSpace(`{"ID": "c1f20d6c-6a1e-4b9a-8a4b-91d5a7d7d5a7","Profile": {"Name": "Jane", "Age": 28,"Occupation": "Manager"}}`),
 			ExpectedOk: true,

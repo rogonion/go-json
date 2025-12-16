@@ -2,6 +2,7 @@ package schema
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -15,13 +16,15 @@ func TestSchema_Convert(t *testing.T) {
 		err := NewConversion().WithCustomConverters(testData.Converters).Convert(testData.Source, testData.Schema, &res)
 		if testData.ExpectedOk && err != nil {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected ok=", testData.ExpectedOk, "got error=", err, "\n",
 				"schema=", testData.Schema, "\n",
 				"data=", core.JsonStringifyMust(testData.Source), "\n",
 			)
 			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
-				t.Error("Test Title:", testData.TestTitle, "\n",
+				t.Error(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
@@ -30,6 +33,7 @@ func TestSchema_Convert(t *testing.T) {
 		} else {
 			if !reflect.DeepEqual(res, testData.ExpectedData) {
 				t.Error(
+					testData.TestTitle, "\n",
 					"expected res to be equal to testData.ExpectedData\n",
 					"schema=", testData.Schema, "\n",
 					"res", core.JsonStringifyMust(res), "\n",
@@ -42,8 +46,8 @@ func TestSchema_Convert(t *testing.T) {
 			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
 				t.Log(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
-					"Test Tile:", testData.TestTitle, "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
 				)
@@ -62,8 +66,12 @@ type conversionData struct {
 }
 
 func conversionDataTestData(yield func(data *conversionData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: DynamicUserSchema(),
 			Source: map[string]interface{}{
 				"ID":    "1",
@@ -81,8 +89,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: &DynamicSchemaNode{
 				Kind: reflect.Map,
 				Type: reflect.TypeOf(map[int]int{}),
@@ -111,8 +123,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:       &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
 			Source:       "123",
 			ExpectedOk:   true,
@@ -122,8 +138,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:       &DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")},
 			Source:       456,
 			ExpectedOk:   true,
@@ -133,8 +153,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:       &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
 			Source:       123.45,
 			ExpectedOk:   true,
@@ -144,8 +168,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:       &DynamicSchemaNode{Kind: reflect.Float64, Type: reflect.TypeOf(float64(0))},
 			Source:       "25.7",
 			ExpectedOk:   true,
@@ -155,8 +183,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema:       &DynamicSchemaNode{Kind: reflect.Bool, Type: reflect.TypeOf(true)},
 			Source:       25,
 			ExpectedOk:   true,
@@ -166,8 +198,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: UserWithAddressSchema(),
 			Source: map[string]interface{}{
 				"Name": "Bob",
@@ -189,8 +225,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: &DynamicSchemaNode{
 				Kind:                                     reflect.Slice,
 				Type:                                     reflect.TypeOf(make([]any, 0)),
@@ -204,8 +244,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Schema: &DynamicSchemaNode{
 				Kind:                                     reflect.Array,
 				Type:                                     reflect.TypeOf([3]any{}),
@@ -227,8 +271,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 			Four  int
 		}
 
+		testCaseIndex++
 		if !yield(
 			&conversionData{
+				TestData: internal.TestData{
+					TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+				},
 				Schema: &DynamicSchemaNode{
 					Kind: reflect.Struct,
 					Type: reflect.TypeOf(custom{}),
@@ -272,8 +320,12 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 			return
 		}
 
+		testCaseIndex++
 		if !yield(
 			&conversionData{
+				TestData: internal.TestData{
+					TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+				},
 				Schema: &DynamicSchemaNode{
 					Kind: reflect.Map,
 					Type: reflect.TypeOf(map[string]interface{}{}),

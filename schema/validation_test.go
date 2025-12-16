@@ -2,6 +2,7 @@ package schema
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -15,13 +16,15 @@ func TestSchema_ValidateData(t *testing.T) {
 		ok, err := NewValidation().WithValidateOnFirstMatch(testData.ValidateOnFirstMatch).WithCustomValidators(testData.Validators).ValidateData(testData.Data, testData.Schema)
 		if ok != testData.ExpectedOk {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected ok=", testData.ExpectedOk, "got=", ok, "\n",
 				"schema=", testData.Schema, "\n",
 				"data=", core.JsonStringifyMust(testData.Data), "\n",
 			)
 			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
-				t.Error("Test Tile:", testData.TestTitle, "\n",
+				t.Error(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
@@ -33,8 +36,8 @@ func TestSchema_ValidateData(t *testing.T) {
 			var schemaError *core.Error
 			if errors.As(err, &schemaError) {
 				t.Log(
+					testData.TestTitle, "\n",
 					"-----Error Details-----", "\n",
-					"Test Title:", testData.TestTitle, "\n",
 					schemaError.String(), "\n",
 					"-----------------------",
 				)
@@ -53,10 +56,11 @@ type validationData struct {
 }
 
 func validationDataTestData(yield func(data *validationData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "Validate simple primitive",
+				TestTitle: fmt.Sprintf("Test Case %d: Validate simple primitive", testCaseIndex),
 			},
 			Schema: &DynamicSchemaNode{
 				Kind: reflect.String,
@@ -69,10 +73,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "Validate invalid simple primitive",
+				TestTitle: fmt.Sprintf("Test Case %d: Validate invalid simple primitive", testCaseIndex),
 			},
 			Schema: &DynamicSchemaNode{
 				Kind: reflect.Int,
@@ -85,10 +90,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test valid data",
+				TestTitle: fmt.Sprintf("Test Case %d: test valid data", testCaseIndex),
 			},
 			Schema: DynamicUserSchema(),
 			Data: User{
@@ -103,10 +109,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test invalid data",
+				TestTitle: fmt.Sprintf("Test Case %d: test invalid data", testCaseIndex),
 			},
 			Schema:               DynamicUserSchema(),
 			Data:                 123,
@@ -117,10 +124,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test valid list of products",
+				TestTitle: fmt.Sprintf("Test Case %d: test valid list of products", testCaseIndex),
 			},
 			Schema: ListOfProductsSchema(),
 			Data: []Product{
@@ -141,10 +149,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test invalid value in list of products",
+				TestTitle: fmt.Sprintf("Test Case %d: test invalid value in list of products", testCaseIndex),
 			},
 			Schema: ListOfProductsSchema(),
 			Data: []any{
@@ -166,10 +175,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test valid map of pointer to users",
+				TestTitle: fmt.Sprintf("Test Case %d: test valid map of pointer to users", testCaseIndex),
 			},
 			Schema: MapUserSchema(),
 			Data: map[int]*User{
@@ -190,10 +200,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test invalid value in map",
+				TestTitle: fmt.Sprintf("Test Case %d: test invalid value in map", testCaseIndex),
 			},
 			Schema: MapUserSchema(),
 			Data: map[int]any{
@@ -215,10 +226,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test map of any value type",
+				TestTitle: fmt.Sprintf("Test Case %d: test map of any value type", testCaseIndex),
 			},
 			Schema: &DynamicSchemaNode{
 				Kind: reflect.Map,
@@ -242,10 +254,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "test deeply nested data",
+				TestTitle: fmt.Sprintf("Test Case %d: test deeply nested data", testCaseIndex),
 			},
 			Schema: ListOfNestedItemSchema(),
 			Data: []NestedItem{
@@ -285,10 +298,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "testing with global uuid custom validator for valid value",
+				TestTitle: fmt.Sprintf("Test Case %d: testing with global uuid custom validator for valid value", testCaseIndex),
 			},
 			Schema: UserWithUuidIdSchema(),
 			Data: UserWithUuidId{
@@ -312,10 +326,11 @@ func validationDataTestData(yield func(data *validationData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&validationData{
 			TestData: internal.TestData{
-				TestTitle: "testing with node specific uuid custom validator for invalid nil value",
+				TestTitle: fmt.Sprintf("Test Case %d: testing with node specific uuid custom validator for invalid nil value", testCaseIndex),
 			},
 			Schema: UserWithUuidIdSchema(),
 			Data: UserWithUuidId{

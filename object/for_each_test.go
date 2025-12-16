@@ -1,6 +1,7 @@
 package object
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -19,6 +20,7 @@ func TestObject_ForEachValue(t *testing.T) {
 
 		if !reflect.DeepEqual(res, testData.Expected) {
 			t.Error(
+				testData.TestTitle, "\n",
 				"expected res to be equal to testData.Expected\n",
 				"path=", testData.Path, "\n",
 				"res=", core.JsonStringifyMust(res), "\n",
@@ -36,8 +38,12 @@ type ForEachData struct {
 }
 
 func ForEachValueTestData(yield func(data *ForEachData) bool) {
+	testCaseIndex := 1
 	if !yield(
 		&ForEachData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Object: []any{
 				map[string]any{"User": User{Name: "Alice"}},
 				ComplexData{
@@ -58,8 +64,12 @@ func ForEachValueTestData(yield func(data *ForEachData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ForEachData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Object: []any{
 				map[string]any{
 					"one": struct {
@@ -100,8 +110,12 @@ func ForEachValueTestData(yield func(data *ForEachData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ForEachData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Object: []any{
 				map[string]any{
 					"one": struct {
@@ -142,8 +156,12 @@ func ForEachValueTestData(yield func(data *ForEachData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ForEachData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Object: []any{
 				map[string]any{
 					"one": struct {
@@ -188,8 +206,12 @@ func ForEachValueTestData(yield func(data *ForEachData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ForEachData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Object: map[string]any{
 				"child": []any{
 					nil,
@@ -224,8 +246,12 @@ func ForEachValueTestData(yield func(data *ForEachData) bool) {
 		return
 	}
 
+	testCaseIndex++
 	if !yield(
 		&ForEachData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
 			Object: map[string]any{
 				"child": []any{
 					nil,
