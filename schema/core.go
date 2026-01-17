@@ -40,6 +40,8 @@ type DefaultConverter interface {
 
 	// Convert is entrypoint for conversion.
 	Convert(data any, schema Schema, destination any) error
+
+	ConvertReflect(source reflect.Value, schema Schema, destination reflect.Value) error
 }
 
 /*
@@ -70,6 +72,8 @@ type Converters map[reflect.Type]Converter
 type DefaultValidator interface {
 	// ValidateData is entrypoint for validation.
 	ValidateData(data any, schema Schema) (bool, error)
+
+	ValidateDataReflect(data reflect.Value, schema Schema) (bool, error)
 }
 
 /*

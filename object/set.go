@@ -23,10 +23,14 @@ Parameters:
 Returns the number of modifications made through setting and the last error encountered.
 */
 func (n *Object) Set(jsonPath path.JSONPath, value any) (uint64, error) {
-	const FunctionName = "Set"
+	return n.SetReflect(jsonPath, reflect.ValueOf(value))
+}
+
+func (n *Object) SetReflect(jsonPath path.JSONPath, value reflect.Value) (uint64, error) {
+	const FunctionName = "SetReflect"
 
 	if jsonPath == "$" || jsonPath == "" {
-		n.source = reflect.ValueOf(value)
+		n.source = value
 		return 1, nil
 	}
 
@@ -81,7 +85,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 	if recursiveSegment.IsKeyRoot {
 		if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 			if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-				return reflect.ValueOf(n.valueToSet)
+				return n.valueToSet
 			}
 
 			recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -143,18 +147,19 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				}
 			}
 			if mapKeySchema, ok := mapEntrySchema.AssociativeCollectionEntryKeySchema.(*schema.DynamicSchemaNode); ok {
-				if mapKey, err := n.convertSourceToTargetType(recursiveSegment.Key, mapKeySchema, mapKeyType); err == nil {
-					mapKeyR := reflect.ValueOf(mapKey)
-					mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
+				mapKey := reflect.New(mapKeyType).Elem()
+				if err := n.convertSourceToTargetType(reflect.ValueOf(recursiveSegment.Key), mapKeySchema, mapKeyType, mapKey); err == nil {
+					mapValue := currentValue.MapIndex(mapKey)
 					if !mapValue.IsValid() {
-						currentValue.SetMapIndex(mapKeyR, reflect.Zero(mapValueType))
-						mapValue = currentValue.MapIndex(mapKeyR)
+						currentValue.SetMapIndex(mapKey, reflect.Zero(mapValueType))
+						mapValue = currentValue.MapIndex(mapKey)
 					}
 
 					if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 						if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-							if value, err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType); err == nil {
-								currentValue.SetMapIndex(mapKeyR, reflect.ValueOf(value))
+							newMapValue := reflect.New(mapValueType).Elem()
+							if err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType, newMapValue); err == nil {
+								currentValue.SetMapIndex(mapKey, newMapValue)
 								n.noOfResults++
 							}
 						} else {
@@ -166,7 +171,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 							}
 
 							recursiveDescentDeleteValue := n.recursiveDescentSet(mapValue, recursiveDescentIndexes, append(currentPath, recursiveSegment))
-							currentValue.SetMapIndex(mapKeyR, recursiveDescentDeleteValue)
+							currentValue.SetMapIndex(mapKey, recursiveDescentDeleteValue)
 						}
 					} else {
 						recursiveIndexes := internal.PathSegmentsIndexes{
@@ -177,7 +182,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 						}
 
 						recursiveSetValue := n.recursiveSet(mapValue, recursiveIndexes, append(currentPath, recursiveSegment), mapValueType)
-						currentValue.SetMapIndex(mapKeyR, recursiveSetValue)
+						currentValue.SetMapIndex(mapKey, recursiveSetValue)
 					}
 				} else {
 					n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert key %s failed", recursiveSegment.Key)).
@@ -215,8 +220,9 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				}
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						if value, err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType); err == nil {
-							currentValue.SetMapIndex(mapKey, reflect.ValueOf(value))
+						newMapValue := reflect.New(mapValueType).Elem()
+						if err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType, newMapValue); err == nil {
+							currentValue.SetMapIndex(mapKey, newMapValue)
 							n.noOfResults++
 						}
 						continue
@@ -263,18 +269,19 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				}
 
 				if mapKeySchema, ok := mapEntrySchema.AssociativeCollectionEntryKeySchema.(*schema.DynamicSchemaNode); ok {
-					if mapKey, err := n.convertSourceToTargetType(unionKey.Key, mapKeySchema, mapKeyType); err == nil {
-						mapKeyR := reflect.ValueOf(mapKey)
-						mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
+					mapKey := reflect.New(mapKeyType).Elem()
+					if err := n.convertSourceToTargetType(reflect.ValueOf(unionKey.Key), mapKeySchema, mapKeyType, mapKey); err == nil {
+						mapValue := currentValue.MapIndex(mapKey)
 						if !mapValue.IsValid() {
-							currentValue.SetMapIndex(mapKeyR, reflect.Zero(mapValueType))
-							mapValue = currentValue.MapIndex(mapKeyR)
+							currentValue.SetMapIndex(mapKey, reflect.Zero(mapValueType))
+							mapValue = currentValue.MapIndex(mapKey)
 						}
 
 						if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 							if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-								if value, err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType); err == nil {
-									currentValue.SetMapIndex(mapKeyR, reflect.ValueOf(value))
+								newMapValue := reflect.New(mapValueType).Elem()
+								if err := n.convertSourceToTargetType(n.valueToSet, mapEntrySchema, mapValueType, newMapValue); err == nil {
+									currentValue.SetMapIndex(mapKey, newMapValue)
 									n.noOfResults++
 								}
 								continue
@@ -288,7 +295,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 							}
 
 							recursiveDescentDeleteValue := n.recursiveDescentSet(mapValue, recursiveDescentIndexes, append(currentPath, recursiveSegment))
-							currentValue.SetMapIndex(mapKeyR, recursiveDescentDeleteValue)
+							currentValue.SetMapIndex(mapKey, recursiveDescentDeleteValue)
 							continue
 						}
 
@@ -300,7 +307,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 						}
 
 						recursiveSetValue := n.recursiveSet(mapValue, recursiveIndexes, append(currentPath, recursiveSegment), mapValueType)
-						currentValue.SetMapIndex(mapKeyR, recursiveSetValue)
+						currentValue.SetMapIndex(mapKey, recursiveSetValue)
 					} else {
 						n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert key %s failed", recursiveSegment.Key)).
 							WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
@@ -335,8 +342,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 					if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 						if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 							arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveSegment), n.schema)
-							if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceType); err == nil {
-								arraySliceValue.Set(reflect.ValueOf(value))
+							if err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceType, arraySliceValue); err == nil {
 								n.noOfResults++
 							}
 						} else {
@@ -382,8 +388,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 					if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 						if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 							arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, collectionMemberSegment), n.schema)
-							if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type()); err == nil {
-								arraySliceValue.Set(reflect.ValueOf(value))
+							if err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type(), arraySliceValue); err == nil {
 								n.noOfResults++
 							}
 						}
@@ -444,8 +449,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, unionKey), n.schema)
-						if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type()); err == nil {
-							arraySliceValue.Set(reflect.ValueOf(value))
+						if err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type(), arraySliceValue); err == nil {
 							n.noOfResults++
 						}
 					}
@@ -506,8 +510,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						arraySliceSchema, _ := schema.GetSchemaAtPath(append(currentPath, collectionMemberSegment), n.schema)
-						if value, err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type()); err == nil {
-							arraySliceValue.Set(reflect.ValueOf(value))
+						if err := n.convertSourceToTargetType(n.valueToSet, arraySliceSchema, arraySliceValue.Type(), arraySliceValue); err == nil {
 							n.noOfResults++
 						}
 					}
@@ -551,8 +554,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 					if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 						if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 							structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveSegment), n.schema)
-							if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type()); err == nil {
-								structFieldValue.Set(reflect.ValueOf(value))
+							if err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type(), structFieldValue); err == nil {
 								n.noOfResults++
 							}
 						} else {
@@ -592,8 +594,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, structFieldSegment), n.schema)
-						if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structField.Type()); err == nil {
-							structField.Set(reflect.ValueOf(value))
+						if err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structField.Type(), structField); err == nil {
 							n.noOfResults++
 						}
 						continue
@@ -635,8 +636,7 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, unionKey), n.schema)
-						if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type()); err == nil {
-							structFieldValue.Set(reflect.ValueOf(value))
+						if err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type(), structFieldValue); err == nil {
 							n.noOfResults++
 						}
 						continue
@@ -813,8 +813,9 @@ func (n *Object) recursiveDescentSet(currentValue reflect.Value, currentPathSegm
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						mapValueSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveDescentSearchSegment), n.schema)
-						if value, err := n.convertSourceToTargetType(n.valueToSet, mapValueSchema, mapValueType); err == nil {
-							currentValue.SetMapIndex(mapKey, reflect.ValueOf(value))
+						newMapValue := reflect.New(mapValueType).Elem()
+						if err := n.convertSourceToTargetType(n.valueToSet, mapValueSchema, mapValueType, newMapValue); err == nil {
+							currentValue.SetMapIndex(mapKey, newMapValue)
 							n.noOfResults++
 						}
 					} else {
@@ -862,8 +863,7 @@ func (n *Object) recursiveDescentSet(currentValue reflect.Value, currentPathSegm
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 						structFieldSchema, _ := schema.GetSchemaAtPath(append(currentPath, recursiveDescentSearchSegment), n.schema)
-						if value, err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type()); err == nil {
-							structFieldValue.Set(reflect.ValueOf(value))
+						if err := n.convertSourceToTargetType(n.valueToSet, structFieldSchema, structFieldValue.Type(), structFieldValue); err == nil {
 							n.noOfResults++
 						}
 					} else {
@@ -915,7 +915,7 @@ func (n *Object) recursiveDescentSet(currentValue reflect.Value, currentPathSegm
 	return currentValue
 }
 
-func (n *Object) convertSourceToTargetType(source any, sourceSchema *schema.DynamicSchemaNode, sourceType reflect.Type) (any, error) {
+func (n *Object) convertSourceToTargetType(source reflect.Value, sourceSchema *schema.DynamicSchemaNode, sourceType reflect.Type, destination reflect.Value) error {
 	const FunctionName = "convertSourceToTargetType"
 
 	if (sourceSchema == nil || sourceSchema.Kind == reflect.Interface) && sourceType != nil {
@@ -926,12 +926,11 @@ func (n *Object) convertSourceToTargetType(source any, sourceSchema *schema.Dyna
 	}
 
 	if sourceSchema != nil {
-		var destination any
-		if err := n.defaultConverter.Convert(source, sourceSchema, &destination); err != nil {
-			return nil, err
+		if err := n.defaultConverter.ConvertReflect(source, sourceSchema, destination); err != nil {
+			return err
 		}
-		return destination, nil
+		return nil
 	}
 
-	return nil, NewError().WithFunctionName(FunctionName).WithMessage("source schema not found").WithNestedError(ErrObjectError)
+	return NewError().WithFunctionName(FunctionName).WithMessage("source schema not found").WithNestedError(ErrObjectError)
 }

@@ -137,7 +137,7 @@ type Object struct {
 	schema schema.Schema
 
 	// Value to set in source by the Set method.
-	valueToSet any
+	valueToSet reflect.Value
 
 	// Result from Get.
 	valueFound reflect.Value

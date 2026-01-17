@@ -119,17 +119,16 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 
 	if mapKeyType, _, ok := core.GetMapKeyValueType(currentValue); ok {
 		if recursiveSegment.IsKey {
-			var mapKey any
-			if err := n.defaultConverter.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
+			mapKey := reflect.New(mapKeyType).Elem()
+			if err := n.defaultConverter.ConvertReflect(reflect.ValueOf(recursiveSegment.Key), &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, mapKey); err != nil {
 				n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).
 					WithNestedError(err).
 					WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 			} else {
-				mapKeyR := reflect.ValueOf(mapKey)
-				mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
+				mapValue := currentValue.MapIndex(mapKey)
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						currentValue.SetMapIndex(mapKeyR, reflect.Value{})
+						currentValue.SetMapIndex(mapKey, reflect.Value{})
 						n.noOfResults++
 					} else {
 						recursiveDescentIndexes := internal.PathSegmentsIndexes{
@@ -140,7 +139,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 						}
 
 						recursiveDescentValue := n.recursiveDescentDelete(mapValue, recursiveDescentIndexes, append(currentPath, recursiveSegment))
-						currentValue.SetMapIndex(mapKeyR, recursiveDescentValue)
+						currentValue.SetMapIndex(mapKey, recursiveDescentValue)
 					}
 				} else {
 					recursiveIndexes := internal.PathSegmentsIndexes{
@@ -151,7 +150,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 					}
 
 					recursiveValue := n.recursiveDelete(mapValue, recursiveIndexes, append(currentPath, recursiveSegment))
-					currentValue.SetMapIndex(mapKeyR, recursiveValue)
+					currentValue.SetMapIndex(mapKey, recursiveValue)
 				}
 			}
 		} else if recursiveSegment.IsKeyIndexAll {
@@ -196,23 +195,22 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 					continue
 				}
 
-				var mapKey any
-				if err := n.defaultConverter.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
+				mapKey := reflect.New(mapKeyType).Elem()
+				if err := n.defaultConverter.ConvertReflect(reflect.ValueOf(unionKey.Key), &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, mapKey); err != nil {
 					n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert key %s to type %v failed", unionKey.Key, mapKeyType)).
 						WithNestedError(err).
 						WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 					continue
 				}
-				mapKeyR := reflect.ValueOf(mapKey)
 
-				mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
+				mapValue := currentValue.MapIndex(mapKey)
 				if !mapValue.IsValid() {
 					continue
 				}
 
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						currentValue.SetMapIndex(mapKeyR, reflect.Value{})
+						currentValue.SetMapIndex(mapKey, reflect.Value{})
 						n.noOfResults++
 						continue
 					}
@@ -225,7 +223,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 					}
 
 					recursiveDescentValue := n.recursiveDescentDelete(mapValue, recursiveDescentIndexes, append(currentPath, unionKey))
-					currentValue.SetMapIndex(mapKeyR, recursiveDescentValue)
+					currentValue.SetMapIndex(mapKey, recursiveDescentValue)
 					continue
 				}
 
@@ -237,7 +235,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				}
 
 				recursiveValue := n.recursiveDelete(mapValue, recursiveIndexes, append(currentPath, unionKey))
-				currentValue.SetMapIndex(mapKeyR, recursiveValue)
+				currentValue.SetMapIndex(mapKey, recursiveValue)
 			}
 		} else {
 			n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("in map, unsupported recursive segment %s", recursiveSegment)).

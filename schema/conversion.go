@@ -794,6 +794,30 @@ func (n *Conversion) Convert(source any, schema Schema, destination any) error {
 	return nil
 }
 
+func (n *Conversion) ConvertReflect(source reflect.Value, schema Schema, destination reflect.Value) error {
+	const FunctionName = "ConvertReflect"
+
+	// Guard: Ensure we can actually write to the destination
+	if !destination.CanSet() {
+		return NewError().WithFunctionName(FunctionName).
+			WithMessage("destination reflect.Value is not settable (must be a pointer Elem)").
+			WithNestedError(ErrDataConversionFailed)
+	}
+
+	result, err := n.RecursiveConvert(source, schema, path.RecursiveDescentSegment{{Key: "$", IsKeyRoot: true}})
+	if err != nil {
+		return err
+	}
+
+	// Type Safety Check (Similar to your Convert method)
+	if result.Type() != destination.Type() && destination.Kind() != reflect.Interface {
+		return NewError().WithFunctionName(FunctionName).
+			WithMessage(fmt.Sprintf("type mismatch: cannot set %s to %s", result.Type(), destination.Type()))
+	}
+
+	destination.Set(result)
+	return nil
+}
 func (n *Conversion) WithCustomConverters(value Converters) *Conversion {
 	n.customConverters = value
 	return n

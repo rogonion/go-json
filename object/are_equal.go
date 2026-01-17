@@ -19,7 +19,9 @@ type Equal interface {
 	//   - right - Value to check.
 	//
 	// Returns true if left and right are equal.
-	AreEqual(left reflect.Value, right reflect.Value) bool
+	AreEqual(left any, right any) bool
+
+	AreEqualReflect(left reflect.Value, right reflect.Value) bool
 }
 
 /*
@@ -42,7 +44,11 @@ Parameters:
 
 Returns `true` if left and right are equal.
 */
-func (n *AreEqual) AreEqual(left reflect.Value, right reflect.Value) bool {
+func (n *AreEqual) AreEqual(left any, right any) bool {
+	return n.AreEqualReflect(reflect.ValueOf(left), reflect.ValueOf(right))
+}
+
+func (n *AreEqual) AreEqualReflect(left reflect.Value, right reflect.Value) bool {
 	leftNilOrInvalid := core.IsNilOrInvalid(left)
 	rightNilOrInvalid := core.IsNilOrInvalid(right)
 
@@ -59,19 +65,19 @@ func (n *AreEqual) AreEqual(left reflect.Value, right reflect.Value) bool {
 	}
 
 	if customEqualityCheck, ok := n.customEquals[left.Type()]; ok {
-		return customEqualityCheck.AreEqual(left, right)
+		return customEqualityCheck.AreEqualReflect(left, right)
 	}
 
 	switch left.Kind() {
 	case reflect.Ptr, reflect.Interface:
-		return n.AreEqual(left.Elem(), right.Elem())
+		return n.AreEqualReflect(left.Elem(), right.Elem())
 	case reflect.Slice, reflect.Array:
 		if left.Len() != right.Len() {
 			return false
 		}
 
 		for i := 0; i < left.Len(); i++ {
-			if !n.AreEqual(left.Index(i), right.Index(i)) {
+			if !n.AreEqualReflect(left.Index(i), right.Index(i)) {
 				return false
 			}
 		}
@@ -86,9 +92,9 @@ func (n *AreEqual) AreEqual(left reflect.Value, right reflect.Value) bool {
 		for _, leftKey := range leftMapKeys {
 			leftKeyMatchRightKey := false
 			for _, rightKey := range rightMapKeys {
-				if n.AreEqual(leftKey, rightKey) {
+				if n.AreEqualReflect(leftKey, rightKey) {
 					leftKeyMatchRightKey = true
-					if !n.AreEqual(left.MapIndex(leftKey), right.MapIndex(rightKey)) {
+					if !n.AreEqualReflect(left.MapIndex(leftKey), right.MapIndex(rightKey)) {
 						return false
 					}
 					break
@@ -106,7 +112,7 @@ func (n *AreEqual) AreEqual(left reflect.Value, right reflect.Value) bool {
 			return false
 		}
 		for i := 0; i < leftNumFields; i++ {
-			if !n.AreEqual(left.Field(i), right.Field(i)) {
+			if !n.AreEqualReflect(left.Field(i), right.Field(i)) {
 				return false
 			}
 		}

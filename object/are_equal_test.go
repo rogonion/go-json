@@ -2,7 +2,6 @@ package object
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/rogonion/go-json/core"
@@ -11,7 +10,7 @@ import (
 
 func TestObject_AreEqual(t *testing.T) {
 	for testData := range AreEqualTestData {
-		if NewAreEqual().WithCustomEquals(testData.CustomAreEquals).AreEqual(reflect.ValueOf(testData.Left), reflect.ValueOf(testData.Right)) != testData.Expected {
+		if NewAreEqual().WithCustomEquals(testData.CustomAreEquals).AreEqual(testData.Left, testData.Right) != testData.Expected {
 			t.Error(
 				testData.TestTitle, "\n",
 				"Result of AreEqual not equal to testData.Expected\n",

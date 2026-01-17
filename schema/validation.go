@@ -338,6 +338,15 @@ func (n *Validation) ValidateData(data any, schema Schema) (bool, error) {
 	})
 }
 
+func (n *Validation) ValidateDataReflect(data reflect.Value, schema Schema) (bool, error) {
+	return n.validateData(data, schema, path.RecursiveDescentSegment{
+		{
+			Key:       "$",
+			IsKeyRoot: true,
+		},
+	})
+}
+
 func (n *Validation) WithCustomValidators(value Validators) *Validation {
 	n.customValidators = value
 	return n

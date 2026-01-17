@@ -111,15 +111,15 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 		const dataKind = "map"
 
 		if recursiveSegment.IsKey {
-			var mapKey any
-			if err := n.defaultConverter.Convert(recursiveSegment.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
+			mapKey := reflect.New(mapKeyType).Elem()
+			if err := n.defaultConverter.ConvertReflect(reflect.ValueOf(recursiveSegment.Key), &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, mapKey); err != nil {
 				n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).
 					WithNestedError(err).
 					WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 				return reflect.Value{}
 			}
 
-			mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
+			mapValue := currentValue.MapIndex(mapKey)
 			if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 				if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
 					if mapValue.IsValid() {
@@ -167,15 +167,15 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 						continue
 					}
 
-					var mapKey any
-					if err := n.defaultConverter.Convert(unionKey.Key, &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, &mapKey); err != nil {
+					mapKey := reflect.New(mapKeyType).Elem()
+					if err := n.defaultConverter.ConvertReflect(reflect.ValueOf(unionKey.Key), &schema.DynamicSchemaNode{Kind: mapKeyType.Kind(), Type: mapKeyType}, mapKey); err != nil {
 						n.lastError = NewError().WithFunctionName(FunctionName).WithMessage(fmt.Sprintf("convert mapKey %s to type %v failed", recursiveSegment, mapKeyType)).
 							WithNestedError(err).
 							WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
 						return reflect.Value{}
 					}
 
-					mapValue := currentValue.MapIndex(reflect.ValueOf(mapKey))
+					mapValue := currentValue.MapIndex(mapKey)
 					if mapValue.IsValid() {
 						selectorSlice = reflect.Append(selectorSlice, mapValue)
 					}
