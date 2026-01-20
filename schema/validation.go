@@ -329,6 +329,15 @@ func (n *Validation) validateData(data reflect.Value, schema Schema, pathSegment
 	}
 }
 
+/*
+ValidateNode offers a direct entry point to Validation.validateDataWithDynamicSchemaNode.
+
+Useful for simple type validations or custom validations as the amount of instructions and allocations are less.
+*/
+func (n *Validation) ValidateNode(source reflect.Value, schema *DynamicSchemaNode) (bool, error) {
+	return n.validateDataWithDynamicSchemaNode(source, schema, nil)
+}
+
 func (n *Validation) ValidateData(data any, schema Schema) (bool, error) {
 	return n.validateData(reflect.ValueOf(data), schema, path.RecursiveDescentSegment{
 		{

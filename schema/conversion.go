@@ -794,6 +794,18 @@ func (n *Conversion) Convert(source any, schema Schema, destination any) error {
 	return nil
 }
 
+/*
+ConvertNode offers a direct entry point to Conversion.convertToDynamicSchemaNode.
+
+Useful for simple type conversions or custom conversions as the amount of instructions and allocations are less.
+*/
+func (n *Conversion) ConvertNode(source reflect.Value, schema *DynamicSchemaNode) (reflect.Value, error) {
+	return n.convertToDynamicSchemaNode(source, schema, nil)
+}
+
+/*
+ConvertReflect similar to Convert but allows source and destination to be in reflect.Value form to reduce boxing/unboxing.
+*/
 func (n *Conversion) ConvertReflect(source reflect.Value, schema Schema, destination reflect.Value) error {
 	const FunctionName = "ConvertReflect"
 
@@ -818,6 +830,7 @@ func (n *Conversion) ConvertReflect(source reflect.Value, schema Schema, destina
 	destination.Set(result)
 	return nil
 }
+
 func (n *Conversion) WithCustomConverters(value Converters) *Conversion {
 	n.customConverters = value
 	return n
