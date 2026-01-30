@@ -61,13 +61,7 @@ func (n *Conversion) convertToStringWithDynamicSchemaNode(source reflect.Value, 
 	case reflect.Bool:
 		return reflect.ValueOf(strconv.FormatBool(source.Bool())), nil
 	default:
-		var ptrToSource any
-		if source.Type().Kind() == reflect.Ptr {
-			ptrToSource = source.Interface()
-		} else {
-			ptrToSource = reflect.New(source.Type()).Interface()
-		}
-		if jsonString, err := json.Marshal(ptrToSource); err == nil {
+		if jsonString, err := json.Marshal(source.Interface()); err == nil {
 			return reflect.ValueOf(string(jsonString)), nil
 		} else {
 			return reflect.Zero(schema.Type), NewError().WithFunctionName(FunctionName).WithMessage("RecursiveConvert source to json string failed").

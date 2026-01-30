@@ -42,6 +42,8 @@ type DefaultConverter interface {
 	Convert(data any, schema Schema, destination any) error
 
 	ConvertReflect(source reflect.Value, schema Schema, destination reflect.Value) error
+
+	ConvertNode(source reflect.Value, schema *DynamicSchemaNode) (reflect.Value, error)
 }
 
 /*
@@ -74,6 +76,8 @@ type DefaultValidator interface {
 	ValidateData(data any, schema Schema) (bool, error)
 
 	ValidateDataReflect(data reflect.Value, schema Schema) (bool, error)
+
+	ValidateNode(source reflect.Value, schema *DynamicSchemaNode) (bool, error)
 }
 
 /*
