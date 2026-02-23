@@ -11,6 +11,7 @@ import (
 	"github.com/rogonion/go-json/path"
 )
 
+// convertToBoolWithDynamicSchemaNode converts various types (int, uint, float, string) to a boolean based on the schema.
 func (n *Conversion) convertToBoolWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToBoolWithDynamicSchemaNode"
 
@@ -40,6 +41,7 @@ func (n *Conversion) convertToBoolWithDynamicSchemaNode(source reflect.Value, sc
 	}
 }
 
+// convertToStringWithDynamicSchemaNode converts various types to a string based on the schema.
 func (n *Conversion) convertToStringWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToStringWithDynamicSchemaNode"
 
@@ -71,6 +73,7 @@ func (n *Conversion) convertToStringWithDynamicSchemaNode(source reflect.Value, 
 	}
 }
 
+// convertToFloatWithDynamicSchemaNode converts various types to a float based on the schema.
 func (n *Conversion) convertToFloatWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToFloatWithDynamicSchemaNode"
 
@@ -102,6 +105,7 @@ func (n *Conversion) convertToFloatWithDynamicSchemaNode(source reflect.Value, s
 	}
 }
 
+// convertToUintWithDynamicSchemaNode converts various types to a uint based on the schema.
 func (n *Conversion) convertToUintWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToUintWithDynamicSchemaNode"
 
@@ -133,6 +137,7 @@ func (n *Conversion) convertToUintWithDynamicSchemaNode(source reflect.Value, sc
 	}
 }
 
+// convertToIntWithDynamicSchemaNode converts various types to an int based on the schema.
 func (n *Conversion) convertToIntWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToIntWithDynamicSchemaNode"
 
@@ -164,6 +169,8 @@ func (n *Conversion) convertToIntWithDynamicSchemaNode(source reflect.Value, sch
 	}
 }
 
+// convertToStructWithDynamicSchemaNode converts a source (Struct, Map, or JSON String) to a struct.
+// It recursively converts fields based on the schema's ChildNodes.
 func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToStructWithDynamicSchemaNode"
 
@@ -274,6 +281,8 @@ func (n *Conversion) convertToStructWithDynamicSchemaNode(source reflect.Value, 
 	}
 }
 
+// convertToMapWithDynamicSchemaNode converts a source (Map, Struct, or JSON String) to a map.
+// It recursively converts keys and values based on the schema.
 func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToMapWithDynamicSchemaNode"
 
@@ -530,6 +539,8 @@ func (n *Conversion) convertToMapWithDynamicSchemaNode(source reflect.Value, sch
 	}
 }
 
+// convertToArraySliceWithDynamicSchemaNode converts a source (Slice, Array, or JSON String) to a slice or array.
+// It recursively converts elements based on the schema.
 func (n *Conversion) convertToArraySliceWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToArraySliceWithDynamicSchemaNode"
 
@@ -609,6 +620,8 @@ func (n *Conversion) convertToArraySliceWithDynamicSchemaNode(source reflect.Val
 	}
 }
 
+// convertToPointerWithDynamicSchemaNode converts a source to a pointer.
+// It recursively converts the underlying value and returns a pointer to it.
 func (n *Conversion) convertToPointerWithDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToPointerWithDynamicSchemaNode"
 	// The destination must be a pointer type.
@@ -644,6 +657,8 @@ func (n *Conversion) convertToPointerWithDynamicSchemaNode(source reflect.Value,
 	return newPtr, nil
 }
 
+// convertToDynamicSchemaNode is the main conversion logic for a single DynamicSchemaNode.
+// It dispatches to specific conversion methods based on the schema Kind.
 func (n *Conversion) convertToDynamicSchemaNode(source reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToDynamicSchemaNode"
 
@@ -701,6 +716,8 @@ func (n *Conversion) convertToDynamicSchemaNode(source reflect.Value, schema *Dy
 	}
 }
 
+// convertToDynamicSchema converts data against a DynamicSchema (polymorphic).
+// It attempts to convert using the default node first, then tries others if necessary.
 func (n *Conversion) convertToDynamicSchema(source reflect.Value, schema *DynamicSchema, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "convertToDynamicSchema"
 
@@ -735,6 +752,8 @@ func (n *Conversion) convertToDynamicSchema(source reflect.Value, schema *Dynami
 	return reflect.Value{}, lastSchemaNodeErr
 }
 
+// RecursiveConvert is the internal entry point for conversion recursion.
+// It routes to either convertToDynamicSchema or convertToDynamicSchemaNode.
 func (n *Conversion) RecursiveConvert(source reflect.Value, schema Schema, pathSegments path.RecursiveDescentSegment) (reflect.Value, error) {
 	const FunctionName = "RecursiveConvert"
 
@@ -751,11 +770,11 @@ func (n *Conversion) RecursiveConvert(source reflect.Value, schema Schema, pathS
 }
 
 /*
-Convert
+Convert transforms the source data into the destination type based on the provided Schema.
 
 Parameters:
   - source - Data to convert.
-  - schema - Schema to use for conversion.
+  - schema - Schema defining the structure and types.
   - destination - Typed pointer to location to store converted result. Will set result using reflect if type matches.
 
 Returns error if conversion fails.
@@ -840,12 +859,12 @@ func NewConversion() *Conversion {
 }
 
 /*
-Conversion Module for converting data against Schema.
+Conversion handles the transformation of data from one type to another (e.g., map to struct) based on a Schema definition.
 
 Usage:
  1. Instantiate using NewConversion.
- 2. Set required parameters.
- 3. Convert data using Conversion.Convert.
+ 2. (Optional) Register custom converters.
+ 3. Call Convert.
 
 Example:
 

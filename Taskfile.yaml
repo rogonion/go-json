@@ -1,0 +1,61 @@
+version: '3'
+
+dotenv: ['.env', '{{.HOME}}/.env']
+
+vars:
+  _CONTAINER_ENGINE:
+    sh: command -v podman >/dev/null && echo podman || echo docker
+  CONTAINER_ENGINE: '{{.CONTAINER_ENGINE | default ._CONTAINER_ENGINE}}'
+
+  IMAGE_NAME: '{{.IMAGE_NAME | default "go-metadatamodel-dev"}}'
+  IMAGE_TAG: '{{.IMAGE_TAG | default "latest"}}'
+
+  _VSCODE_COMMIT_ID:
+    sh: ls -t ~/.vscode-server/bin/ 2>/dev/null | head -n 1
+  VSCODE_COMMIT_ID: '{{.VSCODE_COMMIT_ID | default ._VSCODE_COMMIT_ID}}'
+
+  TARGET: '{{.TARGET | default "./..."}}'
+
+  SUDO_CMD: '{{if eq .USE_SUDO "true"}}sudo {{else}}{{end}}'
+
+tasks:
+  env:info:
+    desc: "Show current environment configuration."
+    cmds:
+      - >
+        echo "Engine: {{.CONTAINER_ENGINE}}"
+      - >
+        echo "Image: {{.IMAGE_NAME}}:{{.IMAGE_TAG}}"
+      - >
+        echo "Vscode Commit ID: {{.VSCODE_COMMIT_ID}}"
+  env:build:
+    desc: "Build the dev container image. Pre-installs vscode-server."
+    cmds:
+      - chmod +x .devcontainer/install_vscode.sh
+      - |
+        {{.SUDO_CMD}}{{.CONTAINER_ENGINE}} build \
+          -t {{.IMAGE_NAME}}:{{.IMAGE_TAG}} \
+          -f .devcontainer/Containerfile \
+          --build-arg COMMIT_ID={{.VSCODE_COMMIT_ID}} \
+          .devcontainer
+
+  deps:
+    desc: "Download and Tidy dependencies."
+    cmds:
+      - echo "📦 Downloading dependencies..."
+      - go mod tidy
+      - go mod download
+      - go mod verify
+      - echo "✅ Dependencies are clean."
+
+
+  test:
+    desc: |
+      Run tests. Usage: task test [TARGET=./pkg/name]
+      Examples:
+      1. task test (Runs all tests recursively)
+      2. task test TARGET=./database
+      3. task test TARGET="./database/field_value.go ./database/field_value_test.go"
+    cmds:
+      - echo "🧪 Testing {{.TARGET}} ..."
+      - go test -race -v -cover {{.TARGET}}

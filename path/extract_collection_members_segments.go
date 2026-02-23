@@ -4,6 +4,11 @@ import (
 	"strconv"
 )
 
+/*
+ExtractCollectionMemberSegments parses a single JSONPath segment string into a structured RecursiveDescentSegment.
+
+It identifies and extracts various selector types such as indices (`[1]`), wildcards (`[*]`), slices (`[1:5]`), unions (`['a','b']`), and standard keys.
+*/
 func (jsonPath JSONPath) ExtractCollectionMemberSegments() RecursiveDescentSegment {
 	collectionMemberSegments := make(RecursiveDescentSegment, 0)
 

@@ -347,4 +347,127 @@ func validationDataTestData(yield func(data *validationData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
+	if !yield(
+		&validationData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Validate tuple (slice with specific schemas at indices)", testCaseIndex),
+			},
+			Schema: &DynamicSchemaNode{
+				Kind: reflect.Slice,
+				Type: reflect.TypeOf([]any{}),
+				ChildNodes: ChildNodes{
+					"0": &DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")},
+					"1": &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
+				},
+				ChildNodesLinearCollectionElementsSchema: &DynamicSchemaNode{Kind: reflect.Interface},
+			},
+			Data:       []any{"Title", 42, true}, // 0: String (OK), 1: Int (OK), 2: Interface (OK)
+			ExpectedOk: true,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&validationData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Validate mixed map (specific keys + generic rest)", testCaseIndex),
+			},
+			Schema: &DynamicSchemaNode{
+				Kind: reflect.Map,
+				Type: reflect.TypeOf(map[string]any{}),
+				ChildNodes: ChildNodes{
+					"id": &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
+				},
+				ChildNodesAssociativeCollectionEntriesKeySchema:   &DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")},
+				ChildNodesAssociativeCollectionEntriesValueSchema: &DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")},
+			},
+			Data: map[string]any{
+				"id":          101,       // Matches specific ChildNode
+				"description": "generic", // Matches generic ValueSchema
+			},
+			ExpectedOk: true,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&validationData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Validate Nilable=true", testCaseIndex),
+			},
+			Schema: &DynamicSchemaNode{
+				Kind:    reflect.String,
+				Type:    reflect.TypeOf(""),
+				Nilable: true,
+			},
+			Data:       nil,
+			ExpectedOk: true,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&validationData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Validate Nilable=false (default)", testCaseIndex),
+			},
+			Schema: &DynamicSchemaNode{
+				Kind: reflect.String,
+				Type: reflect.TypeOf(""),
+			},
+			Data:       nil,
+			ExpectedOk: false,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&validationData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Validate strict map (ChildNodesMustBeValid=true) with missing key", testCaseIndex),
+			},
+			Schema: &DynamicSchemaNode{
+				Kind: reflect.Map,
+				Type: reflect.TypeOf(map[string]any{}),
+				ChildNodes: ChildNodes{
+					"required_key": &DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")},
+				},
+				ChildNodesMustBeValid: true, // Enforces that "required_key" must exist
+			},
+			Data: map[string]any{
+				"other_key": "value",
+			},
+			ExpectedOk: false,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&validationData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Validate fixed-size Array", testCaseIndex),
+			},
+			Schema: &DynamicSchemaNode{
+				Kind:                                     reflect.Array,
+				Type:                                     reflect.TypeOf([3]int{}),
+				ChildNodesLinearCollectionElementsSchema: &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
+			},
+			Data:       [3]int{1, 2, 3},
+			ExpectedOk: true,
+		},
+	) {
+		return
+	}
 }

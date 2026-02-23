@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/gofrs/uuid/v5"
 	"github.com/rogonion/go-json/core"
 	"github.com/rogonion/go-json/internal"
 )
@@ -354,6 +355,66 @@ func conversionDataTestData(yield func(data *conversionData) bool) {
 		) {
 			return
 		}
+	}
+
+	testCaseIndex++
+	if !yield(
+		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Convert JSON string directly to Struct", testCaseIndex),
+			},
+			Schema:       UserProfile2Schema(),
+			Source:       `{"Name": "James Bond", "Age": 40, "Country": "UK", "Occupation": "Agent"}`,
+			ExpectedOk:   true,
+			ExpectedData: UserProfile2{Name: "James Bond", Age: 40, Country: "UK", Occupation: "Agent"},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Convert JSON string directly to Slice", testCaseIndex),
+			},
+			Schema: &DynamicSchemaNode{
+				Kind:                                     reflect.Slice,
+				Type:                                     reflect.TypeOf([]int{}),
+				ChildNodesLinearCollectionElementsSchema: &DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
+			},
+			Source:       `[1, 2, 3, 4]`,
+			ExpectedOk:   true,
+			ExpectedData: []int{1, 2, 3, 4},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&conversionData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Convert using Custom Converter (UUID string to UUID struct)", testCaseIndex),
+			},
+			Schema: UserWithUuidIdSchema(),
+			Source: map[string]any{
+				"ID": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+				"Profile": map[string]any{
+					"Name":       "Alice",
+					"Age":        30,
+					"Country":    "Wonderland",
+					"Occupation": "Explorer",
+				},
+			},
+			ExpectedOk: true,
+			ExpectedData: UserWithUuidId{
+				ID:      uuid.FromStringOrNil("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"),
+				Profile: UserProfile2{Name: "Alice", Age: 30, Country: "Wonderland", Occupation: "Explorer"},
+			},
+		},
+	) {
+		return
 	}
 }
 

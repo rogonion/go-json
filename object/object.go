@@ -7,10 +7,12 @@ import (
 	"github.com/rogonion/go-json/schema"
 )
 
+// SetSchema sets the schema used for structural definitions (e.g. during Set operations).
 func (n *Object) SetSchema(value schema.Schema) {
 	n.schema = value
 }
 
+// WithSchema is a chainable variant of SetSchema.
 func (n *Object) WithSchema(value schema.Schema) *Object {
 	n.schema = value
 	return n
@@ -39,6 +41,9 @@ func (n *Object) GetValueFoundReflected() reflect.Value {
 GetSourceInterface if you want the current state of source in its interface form.
 */
 func (n *Object) GetSourceInterface() any {
+	if !n.source.IsValid() {
+		return nil
+	}
 	return n.source.Interface()
 }
 
@@ -49,26 +54,31 @@ func (n *Object) GetSourceReflected() reflect.Value {
 	return n.source
 }
 
+// SetSourceInterface sets the source object to work with from an interface{}.
 func (n *Object) SetSourceInterface(value any) {
 	n.source = reflect.ValueOf(value)
 	n.sourceType = reflect.TypeOf(value)
 }
 
+// WithSourceInterface is a chainable variant of SetSourceInterface.
 func (n *Object) WithSourceInterface(value any) *Object {
 	n.SetSourceInterface(value)
 	return n
 }
 
+// SetSourceReflected sets the source object to work with from a reflect.Value.
 func (n *Object) SetSourceReflected(value reflect.Value) {
 	n.source = value
 	n.sourceType = value.Type()
 }
 
+// WithSourceReflected is a chainable variant of SetSourceReflected.
 func (n *Object) WithSourceReflected(value reflect.Value) *Object {
 	n.SetSourceReflected(value)
 	return n
 }
 
+// WithDefaultConverter sets the converter used for type coercion (e.g. during Set operations).
 func (n *Object) WithDefaultConverter(value schema.DefaultConverter) *Object {
 	n.defaultConverter = value
 	return n

@@ -401,4 +401,51 @@ func ExtractCollectionMemberSegmentsTestData(yield func(data *ExtractCollectionM
 	) {
 		return
 	}
+
+	testCaseIndex++
+	if !yield(
+		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
+			Segment: "list[1::2]",
+			ExpectedSegments: RecursiveDescentSegment{
+				{
+					Key:               "list",
+					IsKey:             true,
+					ExpectAssociative: true,
+				},
+				{
+					LinearCollectionSelector: &LinearCollectionSelector{
+						Start:   1,
+						IsStart: true,
+						Step:    2,
+						IsStep:  true,
+					},
+					ExpectLinear: true,
+				},
+			},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&ExtractCollectionMemberSegmentsData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d", testCaseIndex),
+			},
+			Segment: "['key with spaces']",
+			ExpectedSegments: RecursiveDescentSegment{
+				{
+					Key:               "key with spaces",
+					IsKey:             true,
+					ExpectAssociative: true,
+				},
+			},
+		},
+	) {
+		return
+	}
 }

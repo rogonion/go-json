@@ -30,6 +30,22 @@ func TestObject_ForEachValue(t *testing.T) {
 	}
 }
 
+func TestObject_ForEach_EarlyExit(t *testing.T) {
+	data := []int{1, 2, 3, 4, 5}
+	res := make([]int, 0)
+
+	NewObject().WithSourceInterface(data).ForEach("$[*]", func(jsonPath path.RecursiveDescentSegment, value reflect.Value) bool {
+		val := int(value.Int())
+		res = append(res, val)
+		return val == 2 // Stop after processing 2
+	})
+
+	expected := []int{1, 2}
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf("Expected %v, got %v", expected, res)
+	}
+}
+
 type ForEachData struct {
 	internal.TestData
 	Object   any

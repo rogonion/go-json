@@ -479,4 +479,128 @@ func SetTestData(yield func(data *SetData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
+	if !yield(
+		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Set root object", testCaseIndex),
+			},
+			Root:          "old root",
+			Path:          "$",
+			ValueToSet:    "new root",
+			ExpectedOk:    1,
+			ExpectedValue: "new root",
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Set slice index with expansion", testCaseIndex),
+			},
+			Root:          []int{1, 2},
+			Path:          "$[4]",
+			ValueToSet:    5,
+			ExpectedOk:    1,
+			ExpectedValue: []int{1, 2, 0, 0, 5},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Set type mismatch (expect error)", testCaseIndex),
+			},
+			Root: &struct {
+				Age int
+			}{
+				Age: 20,
+			},
+			Path:          "$.Age",
+			ValueToSet:    "not an int",
+			ExpectedOk:    0,
+			ExpectedValue: &struct{ Age int }{Age: 20},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Implicit creation (nil root -> map)", testCaseIndex),
+			},
+			Root:          nil,
+			Path:          "$.a.b",
+			ValueToSet:    1,
+			ExpectedOk:    1,
+			ExpectedValue: map[string]any{"a": map[string]any{"b": 1}},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Set root to nil", testCaseIndex),
+			},
+			Root:          "old root",
+			Path:          "$",
+			ValueToSet:    nil,
+			ExpectedOk:    1,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Set map key conversion failure", testCaseIndex),
+			},
+			Root:       map[int]string{},
+			Path:       "$.abc",
+			ValueToSet: "value",
+			Schema: &schema.DynamicSchemaNode{
+				Kind: reflect.Map,
+				Type: reflect.TypeOf(map[int]string{}),
+				ChildNodesAssociativeCollectionEntriesKeySchema: &schema.DynamicSchemaNode{
+					Kind: reflect.Int,
+					Type: reflect.TypeOf(0),
+				},
+			},
+			ExpectedOk:    0,
+			ExpectedValue: map[int]string{},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&SetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Auto-init nil struct pointer", testCaseIndex),
+			},
+			Root:          (*User)(nil),
+			Path:          "$.Name",
+			ValueToSet:    "Alice",
+			ExpectedOk:    1,
+			ExpectedValue: &User{Name: "Alice"},
+		},
+	) {
+		return
+	}
 }

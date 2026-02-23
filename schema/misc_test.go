@@ -1,7 +1,5 @@
 package schema
 
-// Package contains definitions for test data.
-
 import (
 	"fmt"
 	"reflect"

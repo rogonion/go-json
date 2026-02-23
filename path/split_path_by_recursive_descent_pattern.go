@@ -1,5 +1,11 @@
 package path
 
+/*
+SplitPathByRecursiveDescentPattern splits a JSONPath string into a slice of JSONPath strings
+using the recursive descent operator ('..') as the delimiter.
+
+It respects brackets and quotes, ensuring that '..' inside string literals is not treated as a delimiter.
+*/
 func (jsonPath JSONPath) SplitPathByRecursiveDescentPattern() []JSONPath {
 	matches := recursiveDescentPatternRegex().FindAllStringSubmatchIndex(string(jsonPath), -1)
 

@@ -117,6 +117,7 @@ func (n *Deserialization) deserializeDeserializedData(deserializedData any, data
 	return nil
 }
 
+// FromYAML parses YAML data and converts it to the destination type defined by the schema.
 func (n *Deserialization) FromYAML(data []byte, schema Schema, destination any) error {
 	const FunctionName = "FromYAML"
 
@@ -136,6 +137,7 @@ func (n *Deserialization) FromYAML(data []byte, schema Schema, destination any) 
 	return n.deserializeDeserializedData(deserializedData, string(data), schema, destination)
 }
 
+// FromJSON parses JSON data and converts it to the destination type defined by the schema.
 func (n *Deserialization) FromJSON(data []byte, schema Schema, destination any) error {
 	const FunctionName = "FromJSON"
 

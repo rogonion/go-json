@@ -1,12 +1,22 @@
 /*
-Package path provides the foundation for setting up JSON Path in go.
+Package path provides the foundation for parsing and working with JSONPath in Go.
 
-It provides a custom type called JSONPath (alias for string) which offers the following core set of methods:
-  - JSONPath.Parse - Converts JSONPath `string` into a 2D slice of CollectionMemberSegment which provides detailed information about each path segment.
+It implements a parser that converts a JSONPath string into a structured representation
+(RecursiveDescentSegments) which can be used to traverse, query, and manipulate data structures.
+
+The package supports a subset of the JSONPath specification, including:
+  - Root identifier (`$`)
+  - Dot notation (`.key`)
+  - Bracket notation (`['key']`, `["key"]`)
+  - Recursive descent (`..`)
+  - Wildcards (`*`)
+  - Array/Slice selectors (`[start:end:step]`)
+  - Union selectors (`['key1','key2']`, `[1,3,5]`)
+  - Index selectors (`[0]`, `[1]`)
 
 # Usage
 
-Example parsing JSONPath string:
+To parse a JSONPath string:
 
 	var jsonPath JSONPath = "$[1,3,5]"
 	var parsedPath RecursiveDescentSegments = jsonPath.Parse()

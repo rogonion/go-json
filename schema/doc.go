@@ -1,33 +1,35 @@
 /*
-Package schema is a module for bringing structure to an object.
+Package schema provides tools for defining, validating, converting, and deserializing data structures.
 
-All schemas implement the Schema interface.
+It allows you to define a "Schema" (using DynamicSchema or DynamicSchemaNode) that describes the expected structure and types of your data. This is particularly useful for working with dynamic or semi-structured data where compile-time types might be `any` or `map[string]any`, but a specific structure is enforced at runtime.
 
-The following structs have been created to implement the Schema interface:
-  - DynamicSchema - For a set of DynamicSchemaNode.
-  - DynamicSchemaNode - For an individual Schema of a single primitive, struct and its fields, map and its key-value pairs, slice, array etc.
+Key features:
+  - **Definition**: Define schemas for primitives, structs, maps, slices, and arrays.
+  - **Validation**: Check if a piece of data matches a defined schema.
+  - **Conversion**: Convert raw data (e.g., `map[string]any` from JSON) into strongly-typed Go structures based on the schema.
+  - **Deserialization**: Specific helpers for JSON and YAML that combine parsing and conversion.
+  - **Path Traversal**: Retrieve the schema definition for a specific node within a larger schema using JSONPath.
 
-Offers the following set of functions:
-  - Conversion - Convert data from one type to another using Schema. Works with simple and nested objects as well as offers the option to supply custom Converter.
-  - Deserialization - Deserialize data from sources such as `json` or `yaml` using schema.
-  - Validation - Validate data using Schema. Offers option to supply custom Validator.
+# Core Concepts
+
+- **DynamicSchemaNode**: Represents a single node in the schema tree (e.g., a field, a map value, an array element).
+- **DynamicSchema**: Represents a collection of possible schemas (often used for root objects or polymorphic types).
 
 # Usage
 
 ## Conversion
 
-To begin using the module:
+To convert data (e.g. a map) into a struct based on a schema:
 
-1. Create a new instance of the Conversion struct. You can use the convenience method NewConversion.
+1. Create a new instance of the `Conversion` struct using `NewConversion`.
+2. Call the `Convert` method.
 
-The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
-  - customConverters - A map of custom Converter. Useful especially for user-defined structs e.g. `uuid`. Can be set using Conversion.WithCustomConverters or Conversion.SetCustomConverters. The conversion logic will prioritize custom converters for any types encountered.
-
-2. Call the Conversion.Convert method to convert data from one type to another.
+You can register custom converters for specific types (like UUIDs) using `WithCustomConverters`.
 
 Example:
 
 	schema := &DynamicSchemaNode{
+		// Define a map[int]int schema
 		Kind: reflect.Map,
 		Type: reflect.TypeOf(map[int]int{}),
 		ChildNodesAssociativeCollectionEntriesKeySchema: &DynamicSchemaNode{
@@ -51,19 +53,10 @@ Example:
 
 ## Deserialization
 
-The module will first deserialize the data then begin converting it to the destination using a DefaultConverter.
+The module will first parse the raw data (JSON/YAML) into a generic Go structure (map/slice/any) and then convert it to the destination type using the provided schema.
 
-To begin using the module:
-
-1. Create a new instance of the Deserialization struct. You can use the convenience method NewDeserialization which sets the `Deserialization.defaultConverter` using NewConversion.
-
-The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
-  - defaultConverter - Can be set using Deserialization.WithDefaultConverter or Deserialization.SetDefaultConverter.
-  - customConverters - Converter used immediately after deserialization if deserialized type matches. Can be set using Deserialization.WithCustomConverters or Deserialization.SetCustomConverters.
-
-2. Deserialize the data using the following methods:
-  - Deserialization.FromJSON
-  - Deserialization.FromYAML
+1. Create a new instance of `Deserialization` using `NewDeserialization`.
+2. Call `FromJSON` or `FromYAML`.
 
 Example:
 
@@ -102,15 +95,7 @@ Example:
 
 ## Validation
 
-To begin using the module:
-
-1. Create a new instance of the Validation struct. You can use the convenience method NewValidation which sets Validation.validateOnFirstMatch to `true`.
-
-The following parameters can be set using the builder method (prefixed `With`) or Set (prefixed `Set):
-  - validateOnFirstMatch - Using Validation.WithValidateOnFirstMatch or Validation.SetValidateOnFirstMatch.
-  - customValidators - Custom validation logic based on data type. Can be set using Validation.WithCustomValidators or Validation.SetCustomValidators.
-
-2. Validate data using Validation.ValidateData.
+To check if data adheres to a schema without converting it:
 
 Example:
 

@@ -8,6 +8,8 @@ import (
 	"github.com/rogonion/go-json/path"
 )
 
+// validateDataWithDynamicSchemaNodeStruct validates a struct against a DynamicSchemaNode.
+// It iterates over the struct fields and validates them against the corresponding child nodes in the schema.
 func (n *Validation) validateDataWithDynamicSchemaNodeStruct(data reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (bool, error) {
 	const FunctionName = "validateDataWithDynamicSchemaNodeStruct"
 
@@ -57,6 +59,8 @@ func (n *Validation) validateDataWithDynamicSchemaNodeStruct(data reflect.Value,
 	return true, nil
 }
 
+// validateDataWithDynamicSchemaNodeMap validates a map against a DynamicSchemaNode.
+// It checks if the map keys and values conform to the schema defined in ChildNodes or AssociativeCollectionEntries*Schema.
 func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (bool, error) {
 	const FunctionName = "validateDataWithDynamicSchemaNodeMap"
 
@@ -87,7 +91,12 @@ func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, sc
 					childMapValue := data.MapIndex(key)
 					if len(cs.Nodes) > 0 {
 						for childNodeKey, childNode := range cs.Nodes {
-							if childSchemaKeyValid, _ := n.validateData(key, childNode.AssociativeCollectionEntryKeySchema, currentPathSegments); childSchemaKeyValid {
+							keySchema := childNode.AssociativeCollectionEntryKeySchema
+							if keySchema == nil {
+								keySchema = schema.ChildNodesAssociativeCollectionEntriesKeySchema
+							}
+
+							if childSchemaKeyValid, _ := n.validateData(key, keySchema, currentPathSegments); childSchemaKeyValid {
 								if childValueSchemaValid, _ := n.validateDataWithDynamicSchemaNode(childMapValue, childNode, currentPathSegments); childValueSchemaValid {
 									cs.ValidSchemaNodeKeys = append(cs.ValidSchemaNodeKeys, childNodeKey)
 								}
@@ -104,7 +113,12 @@ func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, sc
 							WithData(core.JsonObject{"Schema": (cs), "Data": childMapValue.Interface(), "PathSegments": currentPathSegments})
 					}
 				case *DynamicSchemaNode:
-					if childSchemaKeyValid, _ := n.validateData(key, cs.AssociativeCollectionEntryKeySchema, currentPathSegments); childSchemaKeyValid {
+					keySchema := cs.AssociativeCollectionEntryKeySchema
+					if keySchema == nil {
+						keySchema = schema.ChildNodesAssociativeCollectionEntriesKeySchema
+					}
+
+					if childSchemaKeyValid, _ := n.validateData(key, keySchema, currentPathSegments); childSchemaKeyValid {
 						childMapValue := data.MapIndex(key)
 						if childValueSchemaValid, _ := n.validateDataWithDynamicSchemaNode(childMapValue, cs, currentPathSegments); childValueSchemaValid {
 							break
@@ -161,6 +175,8 @@ func (n *Validation) validateDataWithDynamicSchemaNodeMap(data reflect.Value, sc
 		WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 }
 
+// validateDataWithDynamicSchemaNodeArraySlice validates a slice or array against a DynamicSchemaNode.
+// It iterates over the elements and validates them against ChildNodesLinearCollectionElementsSchema or specific ChildNodes.
 func (n *Validation) validateDataWithDynamicSchemaNodeArraySlice(data reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (bool, error) {
 	const FunctionName = "validateDataWithDynamicSchemaNodeArraySlice"
 
@@ -204,6 +220,8 @@ func (n *Validation) validateDataWithDynamicSchemaNodeArraySlice(data reflect.Va
 		WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
 }
 
+// validateDataWithDynamicSchemaNodePointer validates a pointer against a DynamicSchemaNode.
+// It dereferences the pointer and validates the underlying value against ChildNodesPointerSchema.
 func (n *Validation) validateDataWithDynamicSchemaNodePointer(data reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (bool, error) {
 	const FunctionName = "validateDataWithDynamicSchemaNodePointer"
 
@@ -224,15 +242,27 @@ func (n *Validation) validateDataWithDynamicSchemaNodePointer(data reflect.Value
 	return n.validateData(data.Elem(), schema.ChildNodesPointerSchema, pathSegments)
 }
 
+// validateDataWithDynamicSchemaNode is the main validation logic for a single DynamicSchemaNode.
+// It dispatches to specific validation methods based on the data kind (Struct, Map, Slice, Pointer, etc.)
+// or uses custom validators if provided.
 func (n *Validation) validateDataWithDynamicSchemaNode(data reflect.Value, schema *DynamicSchemaNode, pathSegments path.RecursiveDescentSegment) (bool, error) {
 	const FunctionName = "validateDataWithDynamicSchemaNode"
 
 	if core.IsNilOrInvalid(data) {
 		if !schema.Nilable {
+			var dataInterface any
+			if data.IsValid() {
+				dataInterface = data.Interface()
+			}
 			return false, NewError().WithFunctionName(FunctionName).WithMessage("data cannot be nil").
 				WithNestedError(ErrDataValidationAgainstSchemaFailed).
-				WithData(core.JsonObject{"Schema": schema, "Data": data.Interface(), "PathSegments": pathSegments})
+				WithData(core.JsonObject{"Schema": schema, "Data": dataInterface, "PathSegments": pathSegments})
 		}
+		return true, nil
+	}
+
+	if data.Kind() == reflect.Interface {
+		data = data.Elem()
 	}
 
 	if schema.Kind == reflect.Interface {
@@ -272,6 +302,8 @@ func (n *Validation) validateDataWithDynamicSchemaNode(data reflect.Value, schem
 	}
 }
 
+// validateDataWithDynamicSchema validates data against a DynamicSchema (which contains multiple potential schema nodes).
+// It attempts to validate against the default node first, then iterates through other nodes until a match is found.
 func (n *Validation) validateDataWithDynamicSchema(data reflect.Value, schema *DynamicSchema, pathSegments path.RecursiveDescentSegment) (bool, error) {
 	const FunctionName = "validateDataWithDynamicSchema"
 
@@ -314,6 +346,8 @@ func (n *Validation) validateDataWithDynamicSchema(data reflect.Value, schema *D
 	return true, nil
 }
 
+// validateData is the internal entry point for validation recursion.
+// It routes the validation to either validateDataWithDynamicSchema or validateDataWithDynamicSchemaNode.
 func (n *Validation) validateData(data reflect.Value, schema Schema, pathSegments path.RecursiveDescentSegment) (bool, error) {
 	const FunctionName = "validationData"
 
@@ -338,6 +372,7 @@ func (n *Validation) ValidateNode(source reflect.Value, schema *DynamicSchemaNod
 	return n.validateDataWithDynamicSchemaNode(source, schema, nil)
 }
 
+// ValidateData checks if the provided data adheres to the constraints defined in the Schema.
 func (n *Validation) ValidateData(data any, schema Schema) (bool, error) {
 	return n.validateData(reflect.ValueOf(data), schema, path.RecursiveDescentSegment{
 		{
@@ -347,6 +382,7 @@ func (n *Validation) ValidateData(data any, schema Schema) (bool, error) {
 	})
 }
 
+// ValidateDataReflect is similar to ValidateData but accepts a reflect.Value directly.
 func (n *Validation) ValidateDataReflect(data reflect.Value, schema Schema) (bool, error) {
 	return n.validateData(data, schema, path.RecursiveDescentSegment{
 		{
@@ -381,12 +417,12 @@ func NewValidation() *Validation {
 }
 
 /*
-Validation validate data using Schema.
+Validation provides methods to check if data conforms to a Schema.
 
 Usage:
  1. Instantiate using NewValidation.
- 2. Set required parameters.
- 3. Convert data using Conversion.ValidateData.
+ 2. (Optional) Set custom validators or flags.
+ 3. Call ValidateData.
 
 Example:
 

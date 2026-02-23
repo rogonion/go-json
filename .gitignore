@@ -1,3 +1,11 @@
-**/tmp/**
-**/temp/**
-**/bin/**
+# downloaded task binary scoped to project
+.task/
+
+# temporary/scratch directory
+**/.temp*
+**/.tmp*
+
+# environment variable files
+**/.env.*
+**/.env*
+!.env.template

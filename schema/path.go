@@ -10,9 +10,9 @@ import (
 )
 
 /*
-GetSchemaAtPath returns Schema found at SchemaPath.
+GetSchemaAtPath traverses the provided schema using the given path and returns the schema node corresponding to that path.
 
-Expects an absolute path to specific data.
+It expects an absolute path (starting with $) and does not support recursive descent ('..') in the path query for schema retrieval.
 */
 func GetSchemaAtPath[T SchemaPath](path T, schema Schema) (*DynamicSchemaNode, error) {
 	const FunctionName = "GetSchemaAtPath"

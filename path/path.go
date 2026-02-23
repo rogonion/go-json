@@ -6,28 +6,22 @@ import (
 )
 
 /*
-Parse Extracts path member segment from path that adheres to JSON Path syntax
+Parse breaks down a JSONPath string into a structured 2D slice of segments.
 
-Ensure that the path is a valid JSON Path.
+The parsing process involves:
+ 1. Splitting the path by the recursive descent operator (`..`).
+ 2. For each resulting section:
+    a. Splitting by the dot notation pattern (`.`).
+    b. Extracting individual collection members (brackets, indices, keys).
 
-Splitting is done as follows:
-
- 1. SplitPathByRecursiveDescentPattern - Breakdown path using recursive descent pattern.
-
- 2. For each recursive descent pattern:
-
-    a. SplitPathSegmentByDotNotationPattern - Breakdown using dot notation pattern
-
-    b. ExtractCollectionMemberSegments - Breakdown using bracket notation pattern.
-
-Returns:
-
-  - 2D Slice of Recursive Descent Path(s) to data. Top level slices represents recursive descent path.
+It returns a RecursiveDescentSegments object, which is a 2D slice. The top-level slice
+represents parts of the path separated by recursive descent, and the inner slice contains
+the linear sequence of segments.
 
 Example:
 
-	var jsonPath JSONPath = "$[1,3,5]"
-	var parsedPath RecursiveDescentSegments = jsonPath.Parse()
+	path := path.JSONPath("$..book[0]")
+	segments := path.Parse()
 */
 func (jsonPath JSONPath) Parse() RecursiveDescentSegments {
 	recursiveDescentSegments := jsonPath.SplitPathByRecursiveDescentPattern()
@@ -46,6 +40,7 @@ func (jsonPath JSONPath) Parse() RecursiveDescentSegments {
 	return segments
 }
 
+// String reconstructs the JSONPath string from the parsed RecursiveDescentSegments.
 func (n RecursiveDescentSegments) String() string {
 	segmentsStr := make([]string, 0)
 	for _, segment := range n {
@@ -60,6 +55,7 @@ func (n RecursiveDescentSegments) String() string {
 	return ""
 }
 
+// String reconstructs the string representation of a single recursive descent segment.
 func (n RecursiveDescentSegment) String() string {
 	segmentsStr := make([]string, 0)
 	for _, s := range n {
@@ -94,6 +90,7 @@ func (n RecursiveDescentSegment) String() string {
 	return ""
 }
 
+// String returns the string representation of a linear collection selector (e.g., "[1:5:2]").
 func (n *LinearCollectionSelector) String() string {
 	if n == nil {
 		return ""
@@ -115,6 +112,7 @@ func (n *LinearCollectionSelector) String() string {
 	return str
 }
 
+// String returns the string representation of a single collection member segment.
 func (n *CollectionMemberSegment) String() string {
 	if n == nil {
 		return ""

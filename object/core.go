@@ -19,11 +19,15 @@ var (
 	ErrValueAtPathSegmentInvalidError = errors.New("value at path segment invalid")
 )
 
+// NewError creates a new core.Error with the default base error ErrObjectError.
 func NewError() *core.Error {
 	n := core.NewError().WithDefaultBaseError(ErrObjectError)
 	return n
 }
 
+// mapKeyString returns the string representation of a map key.
+// If the key is already a string, it returns it directly.
+// Otherwise, it uses JSON stringification to ensure a consistent string representation.
 func mapKeyString(mapKey reflect.Value) string {
 	if mapKey.Kind() == reflect.String {
 		return mapKey.String()

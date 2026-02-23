@@ -1,0 +1,54 @@
+FROM registry.opensuse.org/opensuse/leap:16.0
+
+# 1. Install dependencies
+RUN zypper ref && zypper in -y \
+    openssh-server shadow sudo \
+    tar git curl wget gzip libstdc++6 \
+    glibc-locale which iproute2 \
+    gcc glibc-devel make gdb \
+    coreutils findutils grep which gawk sed util-linux \
+    && zypper clean -a
+
+# 2. Setup SSH & User
+# - PermitEmptyPasswords yes: Allows login without a password
+# - PasswordAuthentication yes: Enables password input
+RUN mkdir -p /var/run/sshd \
+    && ssh-keygen -A \
+    && echo "PermitEmptyPasswords yes" > /etc/ssh/sshd_config \
+    && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config \
+    && echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+
+# -u 1000: Standard UID
+# passwd -d: DELETES the password (making it empty)
+RUN useradd -m -s /bin/bash -u 1000 dev \
+    && passwd -d dev \
+    && echo "dev ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# 3. Install golang
+ENV GO_VERSION=1.25.6
+ENV GO_ARCH=linux-amd64
+RUN curl -OL https://go.dev/dl/go${GO_VERSION}.${GO_ARCH}.tar.gz \
+    && tar -C /usr/local -xzf go${GO_VERSION}.${GO_ARCH}.tar.gz \
+    && rm go${GO_VERSION}.${GO_ARCH}.tar.gz
+ENV PATH=$PATH:/usr/local/go/bin:/home/dev/go/bin
+ENV GOPATH=/home/dev/go
+
+USER dev
+
+# 4. Insall vscode (Ensure it is final layer as it is likely to change as vscode updates)
+ARG COMMIT_ID=""
+COPY --chown=dev:dev install_vscode.sh /tmp/install_vscode.sh
+RUN chmod +x /tmp/install_vscode.sh && /tmp/install_vscode.sh "$COMMIT_ID"
+
+# 5. Final steps
+EXPOSE 22
+
+RUN echo 'export GOPATH=/home/dev/go' >> /home/dev/.bashrc \
+    && echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/dev/.bashrc \
+    && echo 'export GOPATH=/home/dev/go' >> /home/dev/.profile \
+    && echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/dev/.profile
+
+ENV PATH="/home/dev/.local/bin:${PATH}"
+
+WORKDIR /home/dev
+CMD ["sudo", "/usr/sbin/sshd", "-D", "-e"]

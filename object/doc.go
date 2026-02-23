@@ -1,19 +1,20 @@
 /*
-Package object provides a set of methods for manipulating objects (data that can be deeply nested whose structure can be determined at runtime) using path.JSONPath.
+Package object provides a set of methods for manipulating dynamic objects using JSONPath.
 
-An object can be a simple primitive or a complex nested mixed structure of structs, maps, slices, and arrays.
+It is designed to work with data structures where the type might not be known at compile time (e.g., `any`, `map[string]any`) or deeply nested structures (structs, slices, maps).
 
-Provides the following methods for manipulating a single object as a source based on path.JSONPath:
- 1. Object.Get - Retrieve value(s) from an object.
- 2. Object.Set - Create or update value(s) in an object.
- 3. Object.Delete - Delete value(s) in an object.
- 4. Object.ForEach - Loop through each value in an object.
+Key features:
+  - **Get**: Retrieve values from an object using a JSONPath query.
+  - **Set**: Create or update values at a specific JSONPath. Supports auto-creation of nested structures if a Schema is provided.
+  - **Delete**: Remove values at a specific JSONPath.
+  - **ForEach**: Iterate over all values matching a JSONPath query.
+  - **AreEqual**: Deep equality check with support for custom equality handlers.
 
-Optionally, there is the AreEqual package that performs the same function as reflect.DeepEqual with the addition of setting up custom AreEquals handlers.
+# Core Concepts
+
+- **Object**: The main entry point. It wraps the source data and provides methods to manipulate it.
 
 # Usage
-
-Except AreEqual, the remaining methods work on a single object as a source. This means you can chain manipulation method calls against one a single source object after instantiation.
 
 To begin:
 
@@ -51,7 +52,7 @@ Example:
 		},
 	}
 
-	objManip := NewObject().WithSource(source)
+	objManip := NewObject().WithSourceInterface(source)
 
 	noOfResults, err := objManip.Get("$.data.metadata.Address.City")
 	var valueFound any

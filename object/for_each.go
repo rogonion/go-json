@@ -46,6 +46,7 @@ func (n *Object) ForEach(jsonPath path.JSONPath, ifValueFoundInObject IfValueFou
 	}
 }
 
+// recursiveForEachValue traverses the object and invokes the callback for every matching node.
 func (n *Object) recursiveForEachValue(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
 		return false
@@ -346,6 +347,7 @@ func (n *Object) recursiveForEachValue(currentValue reflect.Value, currentPathSe
 	return false
 }
 
+// selectorForEachLoop handles iteration for selector segments (e.g. [*], [1,2]) within a ForEach operation.
 func (n *Object) selectorForEachLoop(selectorSlice reflect.Value, selectorSliceElementPaths path.RecursiveDescentSegment, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
 	if selectorSlice.Len() == 0 {
 		return false
@@ -355,7 +357,11 @@ func (n *Object) selectorForEachLoop(selectorSlice reflect.Value, selectorSliceE
 		nextPathSegments := append(currentPath, selectorSliceElementPaths[i])
 		if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 			if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-				if n.ifValueFoundInObject(nextPathSegments, selectorSlice.Index(i)) {
+				val := selectorSlice.Index(i)
+				if val.Kind() == reflect.Interface && !val.IsNil() {
+					val = val.Elem()
+				}
+				if n.ifValueFoundInObject(nextPathSegments, val) {
 					return true
 				}
 				continue
@@ -389,6 +395,7 @@ func (n *Object) selectorForEachLoop(selectorSlice reflect.Value, selectorSliceE
 	return false
 }
 
+// recursiveDescentForEachValue handles ForEach traversal when recursive descent ('..') is involved.
 func (n *Object) recursiveDescentForEachValue(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) bool {
 	if currentPathSegmentIndexes.CurrentRecursive > currentPathSegmentIndexes.LastRecursive || currentPathSegmentIndexes.CurrentCollection > currentPathSegmentIndexes.LastCollection {
 		return false

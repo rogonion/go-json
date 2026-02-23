@@ -416,4 +416,130 @@ func DeleteTestData(yield func(data *DeleteData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete root object", testCaseIndex),
+			},
+			Root:          "some value",
+			Path:          "$",
+			ExpectedOk:    1,
+			ExpectedValue: "",
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete slice element (shift)", testCaseIndex),
+			},
+			Root:          []int{1, 2, 3, 4},
+			Path:          "$[1]",
+			ExpectedOk:    1,
+			ExpectedValue: []int{1, 3, 4},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete non-existent map key", testCaseIndex),
+			},
+			Root:          map[string]int{"a": 1},
+			Path:          "$.b",
+			ExpectedOk:    0,
+			ExpectedValue: map[string]int{"a": 1},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete from nil map", testCaseIndex),
+			},
+			Root:          map[string]any(nil),
+			Path:          "$.key",
+			ExpectedOk:    0,
+			ExpectedValue: map[string]any(nil),
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete from nil slice", testCaseIndex),
+			},
+			Root:          []int(nil),
+			Path:          "$[0]",
+			ExpectedOk:    0,
+			ExpectedValue: []int(nil),
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete index out of bounds", testCaseIndex),
+			},
+			Root:          []int{1, 2},
+			Path:          "$[5]",
+			ExpectedOk:    0,
+			ExpectedValue: []int{1, 2},
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete property from primitive", testCaseIndex),
+			},
+			Root:          123,
+			Path:          "$.key",
+			ExpectedOk:    0,
+			ExpectedValue: 123,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&DeleteData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Delete unexported struct field", testCaseIndex),
+			},
+			Root: struct {
+				exported   string
+				unexported string
+			}{exported: "A", unexported: "B"},
+			Path:       "$.unexported",
+			ExpectedOk: 0,
+			ExpectedValue: struct {
+				exported   string
+				unexported string
+			}{exported: "A", unexported: "B"},
+		},
+	) {
+		return
+	}
 }

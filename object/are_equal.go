@@ -48,6 +48,8 @@ func (n *AreEqual) AreEqual(left any, right any) bool {
 	return n.AreEqualReflect(reflect.ValueOf(left), reflect.ValueOf(right))
 }
 
+// AreEqualReflect performs deep equality check on reflect.Values.
+// It supports custom equality handlers registered via WithCustomEquals.
 func (n *AreEqual) AreEqualReflect(left reflect.Value, right reflect.Value) bool {
 	leftNilOrInvalid := core.IsNilOrInvalid(left)
 	rightNilOrInvalid := core.IsNilOrInvalid(right)

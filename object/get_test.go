@@ -416,4 +416,127 @@ func GetTestData(yield func(data *GetData) bool) {
 	) {
 		return
 	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Get root object", testCaseIndex),
+			},
+			Root:          "root value",
+			Path:          "$",
+			ExpectedOk:    1,
+			ExpectedValue: "root value",
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Get from nil source", testCaseIndex),
+			},
+			Root:          nil,
+			Path:          "$.some.path",
+			ExpectedOk:    0,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Get index out of bounds", testCaseIndex),
+			},
+			Root:          []int{1, 2},
+			Path:          "$[5]",
+			ExpectedOk:    0,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Get unexported struct field (should fail)", testCaseIndex),
+			},
+			Root: struct {
+				exported   string
+				unexported string
+			}{exported: "A", unexported: "B"},
+			Path:          "$.unexported",
+			ExpectedOk:    0,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Get property from primitive (should fail)", testCaseIndex),
+			},
+			Root:          123,
+			Path:          "$.key",
+			ExpectedOk:    0,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Get from nil map", testCaseIndex),
+			},
+			Root:          map[string]string(nil),
+			Path:          "$.key",
+			ExpectedOk:    0,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Get from nil slice", testCaseIndex),
+			},
+			Root:          []int(nil),
+			Path:          "$[0]",
+			ExpectedOk:    0,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
+
+	testCaseIndex++
+	if !yield(
+		&GetData{
+			TestData: internal.TestData{
+				TestTitle: fmt.Sprintf("Test Case %d: Map key conversion failure", testCaseIndex),
+			},
+			Root:          map[int]string{1: "one"},
+			Path:          "$.not_an_int",
+			ExpectedOk:    0,
+			ExpectedValue: nil,
+		},
+	) {
+		return
+	}
 }

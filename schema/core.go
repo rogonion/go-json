@@ -115,6 +115,9 @@ type Schema interface {
 	String() string
 }
 
+/*
+DynamicSchema represents a collection of potential schemas. It is often used when a value could be one of several types (polymorphism) or for the root of a schema document.
+*/
 type DynamicSchema struct {
 	// The key for the default DynamicSchemaNode in Nodes.
 	DefaultSchemaNodeKey string
@@ -157,7 +160,7 @@ type ChildNodes map[string]Schema
 /*
 DynamicSchemaNode defines a single specific schema node within a DynamicSchema.
 
-Useful when recursively setting data in a nested data structure during the creation of new nesting structure by discovering the exact type to use at each path.CollectionMemberSegment in a Path.
+It describes the type, kind, and structural constraints (children, map keys/values, array elements) of a data node.
 */
 type DynamicSchemaNode struct {
 	// The full type of the data.
@@ -178,16 +181,11 @@ type DynamicSchemaNode struct {
 	// Specify a Validator for this specific node.
 	Validator Validator
 
-	// A recursive map defining the schema for the following:
-	// 	- Specific key-value entries in an associative collection like reflect.Map.
-	//
-	//		For each entry, it is important to specify the key type using AssociativeCollectionEntryKeySchema.
-	// 	- Elements at specific indexes in a linear collection like reflect.Slice or reflect.Array.
-	//
-	//		For a scenario whereby linear collection is fixed and ordered.
-	// 	- All reflect.Struct top level members specifically those that are User defined.
-	//
-	// If set, ideally ensure that the parent collection is an interface or can accommodate the various collection entries' types.
+	// ChildNodes defines specific schemas for named children.
+	// Usage:
+	//  - Structs: Maps field names to their schemas.
+	//  - Maps: Maps specific string keys to their schemas (for "shape" maps).
+	//  - Arrays/Slices: Maps specific indices (as strings "0", "1") to schemas (for tuples).
 	ChildNodes ChildNodes
 
 	// Schema for what the current DynamicSchemaNode points to. Mandatory if Kind is reflect.Pointer
@@ -202,9 +200,7 @@ type DynamicSchemaNode struct {
 	// Schema for all elements in a slice/array. Mandatory if Kind is reflect.Slice or reflect.Array.
 	ChildNodesLinearCollectionElementsSchema Schema
 
-	// Schema for node that is a specific entry in an associative collection.
-	//
-	// Ideally this means that the Kind in ChildNodesAssociativeCollectionEntriesKeySchema of the parent map is reflect.Interface.
+	// AssociativeCollectionEntryKeySchema is the schema for the key of this node if it is a child of a map.
 	AssociativeCollectionEntryKeySchema Schema
 
 	// Ensure all ChildNodes are present and validated.

@@ -1,5 +1,11 @@
 package path
 
+/*
+SplitPathSegmentByDotNotationPattern splits a path segment into smaller segments using the dot ('.') delimiter.
+
+This function is typically called after splitting by recursive descent. It respects brackets and quotes,
+ensuring that dots inside string literals or bracket notation are not treated as delimiters.
+*/
 func (jsonPath JSONPath) SplitPathSegmentByDotNotationPattern() []JSONPath {
 	dotNotationPaths := make([]JSONPath, 0)
 

@@ -57,6 +57,7 @@ func (n *Object) Delete(jsonPath path.JSONPath) (uint64, error) {
 	return n.noOfResults, n.lastError
 }
 
+// recursiveDelete traverses the object to find and remove the target value.
 func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveDelete"
 
@@ -128,8 +129,10 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 				mapValue := currentValue.MapIndex(mapKey)
 				if currentPathSegmentIndexes.CurrentCollection == currentPathSegmentIndexes.LastCollection {
 					if currentPathSegmentIndexes.CurrentRecursive == currentPathSegmentIndexes.LastRecursive {
-						currentValue.SetMapIndex(mapKey, reflect.Value{})
-						n.noOfResults++
+						if mapValue.IsValid() {
+							currentValue.SetMapIndex(mapKey, reflect.Value{})
+							n.noOfResults++
+						}
 					} else {
 						recursiveDescentIndexes := internal.PathSegmentsIndexes{
 							CurrentRecursive:  currentPathSegmentIndexes.CurrentRecursive + 1,
@@ -174,7 +177,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 						LastCollection:    len(n.recursiveDescentSegments[currentPathSegmentIndexes.CurrentRecursive+1]) - 1,
 					}
 
-					recursiveDescentValue := n.recursiveDescentDelete(mapValue, recursiveDescentIndexes, append(currentPath, &path.CollectionMemberSegment{IsKey: true, Key: fmt.Sprintf("%v", core.JsonStringifyMust(mapKey.Interface()))}))
+					recursiveDescentValue := n.recursiveDescentDelete(mapValue, recursiveDescentIndexes, append(currentPath, &path.CollectionMemberSegment{IsKey: true, Key: mapKeyString(mapKey)}))
 					currentValue.SetMapIndex(mapKey, recursiveDescentValue)
 					continue
 				}
@@ -186,7 +189,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 					LastCollection:    currentPathSegmentIndexes.LastCollection,
 				}
 
-				recursiveValue := n.recursiveDelete(mapValue, recursiveIndexes, append(currentPath, &path.CollectionMemberSegment{IsKey: true, Key: fmt.Sprintf("%v", core.JsonStringifyMust(mapKey.Interface()))}))
+				recursiveValue := n.recursiveDelete(mapValue, recursiveIndexes, append(currentPath, &path.CollectionMemberSegment{IsKey: true, Key: mapKeyString(mapKey)}))
 				currentValue.SetMapIndex(mapKey, recursiveValue)
 			}
 		} else if len(recursiveSegment.UnionSelector) > 0 {
@@ -672,6 +675,7 @@ func (n *Object) recursiveDelete(currentValue reflect.Value, currentPathSegmentI
 	return currentValue
 }
 
+// recursiveDescentDelete handles deletion when the path involves recursive descent ('..').
 func (n *Object) recursiveDescentDelete(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveDescentDelete"
 

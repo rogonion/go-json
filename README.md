@@ -1,26 +1,91 @@
 # go-json
 
-A library for working with objects i.e, data whose layout and structure resembles `JSON` tree structure.
+A reflection-based library for manipulating dynamic, JSON-like data structures in Go. It provides tools for traversing, modifying, validating, and converting deeply nested objects (maps, structs, slices, arrays) using JSONPath.
 
-An object can be a primitive value or a large and deeply nested collection.
+## Features
 
-Particularly useful for:
+- **Dynamic Object Manipulation**: Get, Set, Delete, and Iterate over values in deeply nested structures using JSONPath.
+- **Schema Validation**: Define schemas for your data and validate dynamic objects against them at runtime.
+- **Type Conversion**: Convert loosely typed data (e.g., `map[string]any`) into strongly typed Go structs, maps, and slices based on schema definitions.
+- **Deserialization**: Helpers for loading JSON and YAML data directly into schema-validated structures.
+- **JSONPath Support**: Supports dot notation, recursive descent (`..`), wildcards (`*`), unions (`['a','b']`), and array slicing (`[start:end:step]`).
 
-- Deeply nested objects.
-- Objects whose type is dynamic.
-- Objects whose type is discoverable at runtime only.
+## Prerequisites
 
-Relies on the language's reflection capabilities.
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Description</th>
+      <th>Link</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Go</td>
+      <td></td>
+      <td><a href="https://go.dev/">Official Website</a></td>
+    </tr>
+    <tr>
+      <td>Task</td>
+      <td>
+        <p>Task runner / build tool.</p> 
+        <p>You can use the provided shell script <a href="taskw">taskw</a> that automatically downloads the binary and installs it in the <code>.task</code> folder.</p>
+      </td>
+      <td><a href="https://taskfile.dev/">Official Website</a></td>
+    </tr>
+    <tr>
+      <td>Docker / Podman</td>
+      <td>Optional container engine for isolated development environment.</td>
+      <td><a href="https://www.docker.com/">Docker</a> / <a href="https://podman.io/">Podman</a></td>
+    </tr>
+  </tbody>
+</table>
 
-## Sections
+After building the dev container, below is a sample script that runs the container and mounts the project directory into the container:
 
-- [Installation](#installation)
-- [JSONPath](#jsonpath)
-- [Modules](#modules)
-    - [Object](#object)
-    - [Path](#path)
-    - [Schema](#schema)
-- [Supported data types](#supported-data-types)
+```shell
+#!/bin/bash
+
+CONTAINER_ENGINE="podman"
+CONTAINER="projects-go-json"
+NETWORK="systemd-leap"
+NETWORK_ALIAS="projects-go-json"
+CONTAINER_UID=1000
+IMAGE="localhost/projects/go-json:latest"
+SSH_PORT="127.0.0.1:2200" # for local proxy vscode ssh access
+PROJECT_DIRECTORY="$(pwd)"
+
+# Check if container exists (Running or Stopped)
+if $CONTAINER_ENGINE ps -a --format '{{.Names}}' | grep -q "^$CONTAINER$"; then
+    echo "   Found existing container: $CONTAINER"
+    # Check if it is currently running
+    if $CONTAINER_ENGINE ps --format '{{.Names}}' | grep -q "^$CONTAINER$"; then
+        echo "✅ Container is already running."
+    else
+        echo "🔄 Container stopped. Starting it..."
+        $CONTAINER_ENGINE start $CONTAINER
+        echo "✅ Started."
+    fi
+else
+    # Container doesn't exist -> Create and Run it
+    echo "🆕 Container not found. Creating new..."
+    $CONTAINER_ENGINE run -d \
+    # start container from scratch
+    # `sudo` is used because systemd-leap network was created in `sudo`
+    # Ensure container image exists in `sudo`
+    # Not needed if target network is not in `sudo`
+    sudo podman run -d \
+        --name $CONTAINER \
+        --network $NETWORK \
+        --network-alias $NETWORK_ALIAS \
+        --user $CONTAINER_UID:$CONTAINER_UID \
+        -p $SSH_PORT:22 \
+        -v $PROJECT_DIRECTORY:/home/dev/go-json:Z \
+        $IMAGE
+    echo "✅ Created and Started."
+fi
+```
 
 ## Installation
 
@@ -28,255 +93,161 @@ Relies on the language's reflection capabilities.
 go get github.com/rogonion/go-json
 ```
 
-## JSONPath
+## Environment Setup
 
-As defined [here](https://en.wikipedia.org/wiki/JSONPath), it is a query language for working with values JSON style.
+This project uses `Taskfile` to manage the development environment and tasks.
 
-The module aims to extract path segments from a JSONPath string.
-
-The module aims to support the entirety of the JSONPath [spec](https://www.rfc-editor.org/rfc/rfc9535.html) except for
-the filter expression.
-
-Noted supported spec as follows:
-
-- Identifiers: `$`.
-- Segments: Dot notation with recursive descent (search), bracket notation.
-- Selectors: wildcard, array slice, union, name, index.
-
-Example JSONPaths:
-
-- `$..name..first`
-- `$.address[1:4:2]['country-of-orign']`
-- `$[*].countries[1,3,5]`
+<table>
+  <thead>
+    <tr>
+      <th>Task</th>
+      <th>Description</th>
+      <th>Usage</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>env:build</code></td>
+      <td>
+        <p>Build the dev container image.</p>
+        <p>Image runs an ssh server one can connect to with vscode.</p>
+      </td>
+      <td><code>task env:build</code></td>
+    </tr>
+    <tr>
+      <td><code>env:info</code></td>
+      <td>Show current environment configuration.</td>
+      <td><code>task env:info</code></td>
+    </tr>
+    <tr>
+      <td><code>deps</code></td>
+      <td>Download and tidy dependencies.</td>
+      <td><code>task deps</code></td>
+    </tr>
+    <tr>
+      <td><code>test</code></td>
+      <td>Run tests. Supports optional <code>TARGET</code> variable.</td>
+      <td><code>task test</code><br><code>task test TARGET=./object</code></td>
+    </tr>
+  </tbody>
+</table>
 
 ## Modules
 
-### Object
+### 1. Object
 
-This [module](object) allows one to manipulate data using [JSONPath](#jsonpath).
+The `object` package is the core of the library, allowing you to manipulate data structures.
 
-With this module, you can do the following:
+**Key Capabilities:**
+- `Get`: Retrieve values.
+- `Set`: Update or insert values (auto-creates nested structures if schema is provided).
+- `Delete`: Remove values.
+- `ForEach`: Iterate over matches.
+- `AreEqual`: Deep comparison.
 
-- Set value(s) in an object.
-- Get value(s) in an object.
-- Delete value(s) in an object.
-- Loop through each value(s) in an object (For Each).
-- Check if two values are equal with options for setting up custom equal checkers.
-
-Example usage for manipulating a single object:
+**Example:**
 
 ```go
 package main
 
-import "github.com/rogonion/go-json/object"
+import (
+	"fmt"
+	"github.com/rogonion/go-json/object"
+)
 
-type Address struct {
-	Street  string
-	City    string
-	ZipCode *string
-}
-
-var source any = map[string]any{
-	"data": map[string]any{
-		"metadata": struct {
-			Address Address
-			Status  string
-		}{
-			Address: Address{
-				Street: "123 Main St",
-				City:   "Anytown",
-			},
-			Status: "active",
+func main() {
+	data := map[string]any{
+		"users": []any{
+			map[string]any{"name": "Alice", "id": 1},
+			map[string]any{"name": "Bob", "id": 2},
 		},
-	},
+	}
+
+	obj := object.NewObject().WithSourceInterface(data)
+
+	// Get
+	val, _ := obj.Get("$.users[0].name")
+	fmt.Println(obj.GetValueFoundInterface()) // Output: Alice
+
+	// Set
+	obj.Set("$.users[1].active", true)
+
+	// Delete
+	obj.Delete("$.users[0]")
 }
-
-var objManip *object.Object = object.NewObject().WithSourceInterface(source)
-
-var valueFound any
-var ok bool
-var err error
-var noOfResults uint64
-
-noOfResults, err = objManip.Get("$.data.metadata.Address.City")
-var valueFound any
-
-if noOfResults > 0 {
-    // retrieve value found if no of results is greater than 0
-    valueFound = objManip.GetValueFoundInterface()
-}
-
-noOfModifications, err := objManip.Set("$.data.metadata.Status", "inactive")
-
-noOfModifications, err = objManip.Delete("$.data.metadata.Status")
-
-// retrieve modified source after Set/Delete
-var modifiedSource any = objManip.GetSourceInterface()
-
 ```
 
-### Path
+### 2. Schema
 
-[Module](path) for converting a [JSONPath](#jsonpath) string into a 2D array of detailed information about each path
-segment.
+The `schema` package allows you to define the expected structure of your data. This is useful for validation and conversion of dynamic data.
 
-Such information is used when manipulating data using the core modules like get, set, and delete.
-
-Example parsing JSONPath string:
+**Example: Validation**
 
 ```go
 package main
 
+import (
+	"reflect"
+	"github.com/rogonion/go-json/schema"
+)
+
+func main() {
+	// Define a schema
+	userSchema := &schema.DynamicSchemaNode{
+		Kind: reflect.Struct,
+		Type: reflect.TypeOf(struct{ Name string; Age int }{}),
+		ChildNodes: schema.ChildNodes{
+			"Name": &schema.DynamicSchemaNode{Kind: reflect.String, Type: reflect.TypeOf("")},
+			"Age":  &schema.DynamicSchemaNode{Kind: reflect.Int, Type: reflect.TypeOf(0)},
+		},
+	}
+
+	validator := schema.NewValidation()
+	data := map[string]any{"Name": "Alice", "Age": 30}
+	
+	// Validate
+	ok, err := validator.ValidateData(data, userSchema)
+}
+```
+
+**Example: Conversion**
+
+```go
+package main
+
+import (
+	"reflect"
+	"github.com/rogonion/go-json/schema"
+)
+
+func main() {
+	// Define schema (same as above)
+	// ...
+
+	source := map[string]any{"Name": "Alice", "Age": "30"} // Age is string in source
+	var dest struct{ Name string; Age int }
+
+	converter := schema.NewConversion()
+	// Converts and coerces types (string "30" -> int 30)
+	err := converter.Convert(source, userSchema, &dest)
+}
+```
+
+### 3. Path
+
+The `path` package handles parsing of JSONPath strings. It is primarily used internally by the `object` package but can be used directly to inspect paths.
+
+```go
 import "github.com/rogonion/go-json/path"
 
-var jsonPath path.JSONPath = "$[1,3,5]"
-var parsedPath path.RecursiveDescentSegments = jsonPath.Parse()
+p := path.JSONPath("$.store.book[*].author")
+segments := p.Parse()
 ```
 
-### Schema
+## Supported Data Types
 
-[Module](schema) for defining and working with the schema of an object. This includes the data type as well as the tree
-structure of
-every simple primitive, linear collection element, or associative collection entry in an object.
-
-Useful for the following purposes:
-
-- Validating if an object adheres to a defined schema. Allows extension with custom validators.
-- Converting an object to a schema defined type. Allows extension with custom converters.
-- Deserializing data from json or yaml to a schema defined type. Allows extension with custom deserializers.
-- Recursively creating new nested objects with the [Set](objectV1/set.go) module. For example, a source empty nil value
-  of
-  type any can end up being an array of pointers to structs if that is the schema definition.
-- Fetch the schema of data at a `JSONPath`.
-
-Example usage:
-
-#### Conversion
-
-```go
-package main
-
-import (
-	"reflect"
-
-	"github.com/rogonion/go-json/schema"
-)
-
-var sch schema.Schema = &schema.DynamicSchemaNode{
-	Kind: reflect.Map,
-	Type: reflect.TypeOf(map[int]int{}),
-	ChildNodesAssociativeCollectionEntriesKeySchema: &schema.DynamicSchemaNode{
-		Kind: reflect.Int,
-		Type: reflect.TypeOf(0),
-	},
-	ChildNodesAssociativeCollectionEntriesValueSchema: &schema.DynamicSchemaNode{
-		Kind: reflect.Int,
-		Type: reflect.TypeOf(0),
-	},
-}
-
-var source any = map[string]string{
-	"1": "1",
-	"2": "2",
-	"3": "3",
-}
-var destination map[int]int = make(map[int]int)
-var converter schema.DefaultConverter = schema.NewConversion()
-var err error = converter.Convert(source, sch, &destination)
-
-```
-
-#### Deserialization
-
-```go
-package main
-
-import (
-	"reflect"
-	"strings"
-
-	"github.com/rogonion/go-json/schema"
-)
-
-type UserProfile2 struct {
-	Name       string
-	Age        int
-	Country    string
-	Occupation string
-}
-
-var sch schema.Schema = &schema.DynamicSchemaNode{
-	Kind: reflect.Struct,
-	Type: reflect.TypeOf(UserProfile2{}),
-	ChildNodes: map[string]schema.Schema{
-		"Name": &schema.DynamicSchemaNode{
-			Kind: reflect.String,
-			Type: reflect.TypeOf(""),
-		},
-		"Age": &schema.DynamicSchemaNode{
-			Kind: reflect.Int,
-			Type: reflect.TypeOf(0),
-		},
-		"Country": &schema.DynamicSchemaNode{
-			Kind: reflect.String,
-			Type: reflect.TypeOf(""),
-		},
-		"Occupation": &schema.DynamicSchemaNode{
-			Kind: reflect.String,
-			Type: reflect.TypeOf(""),
-		},
-	},
-}
-
-var deserializer schema.Deserializer = schema.NewDeserialization()
-
-var json string = "{\"Name\":\"John Doe\"}"
-var jsonDestination UserProfile2
-var err error = deserializer.FromJSON([]byte(json), sch, &jsonDestination)
-
-var yaml string = strings.TrimSpace(`Name: John Doe`)
-var yamlDestination UserProfile2
-err = deserializer.FromYAML([]byte(yaml), schema, &yamlDestination)
-
-```
-
-#### Validation
-
-```go
-package main
-
-import (
-	"reflect"
-
-	"github.com/rogonion/go-json/schema"
-)
-
-var sch schema.Schema = &schema.DynamicSchemaNode{
-	Kind: reflect.String,
-	Type: reflect.TypeOf(""),
-}
-
-var validation schema.DefaultValidator = schema.NewValidation()
-var ok bool
-var err error
-ok, err = validation.ValidateData("this is a string", schema)
-
-```
-
-## Supported data types
-
-- Primitive types:
-    - Signed integer: `int`, `int8`, `int16`, `int32`, `int64`.
-    - Unsigned integer: `uint`, `uint8`, `uint16`, `uint32`, `uint64`.
-    - Float: `float32`, `float64`.
-    - `boolean`
-    - `string`
-- Collection types:
-    - Linear:
-        - `arrays`
-        - `slices`
-    - Associative:
-        - `structs`
-        - `maps`
-- `pointers` to values of primitive and collection types.
-
+The library supports reflection-based manipulation of:
+- **Primitives**: `int` (all sizes), `uint` (all sizes), `float32/64`, `bool`, `string`.
+- **Collections**: `map`, `struct`, `slice`, `array`.
+- **Pointers**: Pointers to any of the above.
+- **Interfaces**: `any` / `interface{}`.

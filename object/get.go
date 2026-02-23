@@ -53,6 +53,8 @@ func (n *Object) Get(jsonPath path.JSONPath) (uint64, error) {
 	return n.noOfResults, n.lastError
 }
 
+// recursiveGet traverses the object structure linearly (without recursive descent '..').
+// It handles standard path segments like keys, indices, and selectors.
 func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveGet"
 
@@ -72,9 +74,13 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 	}
 
 	if core.IsNilOrInvalid(currentValue) {
+		var val any
+		if currentValue.IsValid() {
+			val = currentValue.Interface()
+		}
 		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("value nil or invalid").
 			WithNestedError(ErrPathSegmentInvalidError).
-			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
+			WithData(core.JsonObject{"CurrentValue": val, "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 
@@ -395,6 +401,8 @@ func (n *Object) recursiveGet(currentValue reflect.Value, currentPathSegmentInde
 	return reflect.Value{}
 }
 
+// selectorGetLoop iterates over a collection of values (found via a selector like [*] or [1,2])
+// and continues the traversal for each element.
 func (n *Object) selectorGetLoop(dataKind string, selectorSlice reflect.Value, recursiveSegment *path.CollectionMemberSegment, currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "selectorGetLoop"
 	_sliceAny := make([]any, 0)
@@ -447,6 +455,8 @@ func (n *Object) selectorGetLoop(dataKind string, selectorSlice reflect.Value, r
 	return newSliceResult
 }
 
+// recursiveDescentGet handles the recursive descent operator ('..').
+// It searches for the target key at the current level and all nested levels.
 func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveDescentGet"
 
@@ -472,9 +482,13 @@ func (n *Object) recursiveDescentGet(currentValue reflect.Value, currentPathSegm
 	}
 
 	if core.IsNilOrInvalid(currentValue) {
+		var val any
+		if currentValue.IsValid() {
+			val = currentValue.Interface()
+		}
 		n.lastError = NewError().WithFunctionName(FunctionName).WithMessage("current value nil or invalid").
 			WithNestedError(ErrValueAtPathSegmentInvalidError).
-			WithData(core.JsonObject{"CurrentValue": currentValue.Interface(), "CurrentPathSegment": currentPath})
+			WithData(core.JsonObject{"CurrentValue": val, "CurrentPathSegment": currentPath})
 		return reflect.Value{}
 	}
 

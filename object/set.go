@@ -26,6 +26,7 @@ func (n *Object) Set(jsonPath path.JSONPath, value any) (uint64, error) {
 	return n.SetReflect(jsonPath, reflect.ValueOf(value))
 }
 
+// SetReflect is the underlying implementation of Set that works with reflect.Value.
 func (n *Object) SetReflect(jsonPath path.JSONPath, value reflect.Value) (uint64, error) {
 	const FunctionName = "SetReflect"
 
@@ -64,6 +65,8 @@ func (n *Object) SetReflect(jsonPath path.JSONPath, value reflect.Value) (uint64
 	return n.noOfResults, n.lastError
 }
 
+// recursiveSet traverses the object to find the location to set the value.
+// It handles creation of intermediate nodes if a schema is provided.
 func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment, currentValueType reflect.Type) reflect.Value {
 	const FunctionName = "recursiveSet"
 
@@ -678,6 +681,8 @@ func (n *Object) recursiveSet(currentValue reflect.Value, currentPathSegmentInde
 	return currentValue
 }
 
+// getDefaultValueAtPathSegment attempts to create a new zero-value for the current path segment.
+// It uses the Schema if available to determine the correct type (e.g. specific struct vs generic map).
 func (n *Object) getDefaultValueAtPathSegment(value reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment, valueType reflect.Type) (reflect.Value, error) {
 	const FunctionName = "getDefaultValueAtPathSegment"
 
@@ -751,6 +756,8 @@ func (n *Object) getDefaultValueAtPathSegment(value reflect.Value, currentPathSe
 	return newValue, nil
 }
 
+// recursiveDescentSet handles setting values when the path involves recursive descent ('..').
+// Note: Setting values via recursive descent can modify multiple locations in the object tree.
 func (n *Object) recursiveDescentSet(currentValue reflect.Value, currentPathSegmentIndexes internal.PathSegmentsIndexes, currentPath path.RecursiveDescentSegment) reflect.Value {
 	const FunctionName = "recursiveDescentSet"
 
@@ -915,6 +922,7 @@ func (n *Object) recursiveDescentSet(currentValue reflect.Value, currentPathSegm
 	return currentValue
 }
 
+// convertSourceToTargetType uses the default converter to coerce the valueToSet into the target type defined by the schema or reflection.
 func (n *Object) convertSourceToTargetType(source reflect.Value, sourceSchema *schema.DynamicSchemaNode, sourceType reflect.Type, destination reflect.Value) error {
 	const FunctionName = "convertSourceToTargetType"
 
